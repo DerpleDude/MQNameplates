@@ -1,101 +1,26 @@
 #include "Ui.h"
+#include "eqlib/EQLib.h"
+#include "mq/imgui/Widgets.h"
+
 #include <algorithm>
 #include <cmath>
-#include "mq\imgui\Widgets.h"
+
+using namespace eqlib;
 
 Ui::SettingsStruct Ui::Settings;
 
-void Ui::SetCursorPos(const ImVec2& pos)
-{
-	Settings.CursorPos = pos;
-	Settings.LastCursorLinePos = pos;
-	Settings.LineStartXPos = pos.x;
-}
-
-ImVec2 Ui::GetCursorPos()
-{
-	return Settings.CursorPos;
-}
-
-void Ui::MoveCursor(const ImVec2& pos)
-{
-	ImVec2 p(
-		pos.x + Settings.Padding.x,
-		pos.y + Settings.Padding.y
-	);
-
-	Settings.LastCursorLinePos.x = Settings.CursorPos.x + p.x;
-	Settings.LastCursorLinePos.y = Settings.CursorPos.y;
-
-	Settings.CursorPos.y += p.y;
-	Settings.CursorPos.x = Settings.LineStartXPos;
-}
-
-void Ui::SameLine()
-{
-	Settings.CursorPos = Settings.LastCursorLinePos;
-}
-
-float Ui::GetDeltaTime()
-{
-	float dt = ImGui::GetIO().DeltaTime;
-
-	if (dt <= 0.0f)
-		dt = 1.0f / 60.0f;
-
-	if (dt > 0.1f)
-		dt = 0.1f;
-
-	return dt;
-}
-
-ImU32 Ui::ImVec4ToColor(const ImVec4& v)
-{
-	return IM_COL32(
-		(int)(v.x * 255.0f),
-		(int)(v.y * 255.0f),
-		(int)(v.z * 255.0f),
-		(int)(v.w * 255.0f)
-	);
-}
-
-ImVec4 Ui::GetConColor(const int color)
-{
-	switch (color)
-	{
-	case CONCOLOR_GREY:
-		return { 0.6f, 0.6f, 0.6f, 0.8f };
-	case CONCOLOR_GREEN:
-		return { 0.02f, 0.8f, 0.2f, 0.8f };
-	case CONCOLOR_LIGHTBLUE:
-		return { 0.02f, 0.8f, 1.0f, 0.8f };
-	case CONCOLOR_BLUE:
-		return { 0.02f, 0.4f, 1.0f, 1.0f };
-	case CONCOLOR_YELLOW:
-		return { 0.8f, 0.8f, 0.02f, 0.8f };
-	case CONCOLOR_RED:
-		return { 0.8f, 0.2f, 0.2f, 0.8f };
-	default:
-		return { 1, 1, 1, 1 };
-	}
-}
-
-ImVec4 Ui::GetConColorBySpawn(SPAWNINFO * pSpawn)
-{
-	return Ui::GetConColor(ConColor(pSpawn));
-}
-
-void Ui::RenderNamePlateText(ImU32 color, const char* text)
+void Ui::RenderNamePlateText(CursorState& cursor, ImU32 color, const char* text)
 {
 	ImVec2 size = ImGui::CalcTextSize(text);
 
 	ImDrawList* dl = ImGui::GetForegroundDrawList();
-	dl->AddText(Settings.CursorPos, color, text);
+	dl->AddText(cursor.GetPos(), color, text);
 
-	MoveCursor(size);
+	cursor.Move(size);
 }
 
 void Ui::RenderNamePlateRect(
+	CursorState& cursor,
 	const ImVec2& size,
 	ImU32 color,
 	float rounding,
@@ -104,49 +29,41 @@ void Ui::RenderNamePlateRect(
 {
 	ImDrawList* dl = ImGui::GetForegroundDrawList();
 
-	ImVec2 max(
-		Settings.CursorPos.x + size.x,
-		Settings.CursorPos.y + size.y
-	);
+	ImVec2 max(cursor.GetPos() + size);
 
 	if (filled)
 	{
-		dl->AddRectFilled(Settings.CursorPos, max, color, rounding);
+		dl->AddRectFilled(cursor.GetPos(), max, color, rounding);
 	}
 	else
 	{
-		dl->AddRect(Settings.CursorPos, max, color, rounding, 0, thickness);
+		dl->AddRect(cursor.GetPos(), max, color, rounding, 0, thickness);
 	}
 
-	MoveCursor(size);
+	cursor.Move(size);
 }
 
-void Ui::DrawInspectableSpellIcon(int iconID, EQ_Spell* pSpell)
+void Ui::DrawInspectableSpellIcon(CursorState& cursor, EQ_Spell* pSpell)
 {
-	ImVec2 cursor = GetCursorPos();
-
+	const ImVec2& cursorPos = cursor.GetPos();
 	ImVec2 size(Settings.IconSize, Settings.IconSize);
-	ImVec2 max(cursor.x + size.x, cursor.y + size.y);
+	ImVec2 max(cursorPos + size);
 
 	ImDrawList* dl = ImGui::GetForegroundDrawList();
-
 	ImVec2 mouse = ImGui::GetIO().MousePos;
 
-	bool hovered =
-		mouse.x >= cursor.x && mouse.x <= max.x &&
-		mouse.y >= cursor.y && mouse.y <= max.y;
+	bool hovered = mouse.x >= cursorPos.x && mouse.x <= max.x
+		&& mouse.y >= cursorPos.y && mouse.y <= max.y;
 
 	bool clicked = hovered && ImGui::IsMouseClicked(0);
 
 	if (pSidlMgr)
 	{
-		if (CTextureAnimation* anim = pSidlMgr->FindAnimation(CXStr("A_SpellGems")))
+		if (CTextureAnimation* anim = pSidlMgr->FindAnimation("A_SpellGems"))
 		{
-			if (anim)
-			{
-				anim->SetCurCell(iconID);
-				imgui::DrawTextureAnimation(dl, anim, cursor, size);
-			}
+			int iconID = pSpell->SpellIcon;
+			anim->SetCurCell(iconID);
+			mq::imgui::DrawTextureAnimation(dl, anim, cursorPos, size);
 		}
 	}
 
@@ -156,7 +73,7 @@ void Ui::DrawInspectableSpellIcon(int iconID, EQ_Spell* pSpell)
 			pSpellDisplayManager->ShowSpell(pSpell->ID, true, true, SpellDisplayType_SpellBookWnd);
 	}
 
-	MoveCursor(size);
+	cursor.Move(size);
 }
 
 // helper
@@ -176,6 +93,7 @@ static ImVec4 ImLerp(const ImVec4& a, const ImVec4& b, float t)
 }
 
 void Ui::RenderAnimatedPercentage(
+	CursorState& cursor,
 	const std::string& id,
 	float barPct,
 	float height,
@@ -188,10 +106,9 @@ void Ui::RenderAnimatedPercentage(
 {
 	float targetPct = Clamp(barPct, 0.0f, 100.0f);
 
-	double now = ImGui::GetTime();
+	// FIXME: This should be accumulated time, not absolute time.
+	float now = static_cast<float>(ImGui::GetTime());
 	ImDrawList* drawList = ImGui::GetForegroundDrawList();
-
-	float pct = targetPct;
 
 	AnimState& animState = Settings.ProgBarAnimState[id];
 
@@ -202,8 +119,8 @@ void Ui::RenderAnimatedPercentage(
 		animState.lastTarget = targetPct;
 
 	// simple animation (instead of ImAnim tween)
-	float dt = GetDeltaTime();
-	pct = animState.lastTarget + (targetPct - animState.lastTarget) * (dt * 8.0f);
+	float dt = ImGui::GetIO().DeltaTime;
+	float pct = animState.lastTarget + (targetPct - animState.lastTarget) * (dt * 8.0f);
 	animState.lastTarget = pct;
 
 	float fraction = pct / 100.0f;
@@ -225,7 +142,7 @@ void Ui::RenderAnimatedPercentage(
 		trend.lastPct = pct;
 	}
 
-	ImVec2 curPos = GetCursorPos();
+	ImVec2 curPos = cursor.GetPos();
 
 	float minX = curPos.x;
 	float minY = curPos.y;
@@ -283,7 +200,7 @@ void Ui::RenderAnimatedPercentage(
 		drawList->AddRectFilled(
 			ImVec2(minX, minY),
 			ImVec2(fillMaxX, maxY),
-			ImVec4ToColor(colLow),
+			ImGui::ColorConvertFloat4ToU32(colLow),
 			fillRounding
 		);
 
@@ -320,7 +237,7 @@ void Ui::RenderAnimatedPercentage(
 			bool isAnimating = fabs(targetPct - pct) > 0.5f;
 
 			float sweepSpeed = isAnimating ? 1.2f : 0.65f;
-			float sweepBase = fmod(now * sweepSpeed, 1.0f);
+			float sweepBase = fmodf(now * sweepSpeed, 1.0f);
 
 			float sweep = (isAnimating || trend.direction < 0)
 				? (1.0f - sweepBase)
@@ -342,24 +259,24 @@ void Ui::RenderAnimatedPercentage(
 					ImVec2(sheenLeft, minY),
 					ImVec2(sheenMid, maxY),
 					IM_COL32(255, 255, 255, 0),
-					IM_COL32(255, 255, 255, (int)(sheenAlpha * 255)),
-					IM_COL32(255, 255, 255, (int)((sheenAlpha * 0.55f) * 255)),
+					IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
+					IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
 					IM_COL32(255, 255, 255, 0)
 				);
 
 				drawList->AddRectFilledMultiColor(
 					ImVec2(sheenMid, minY),
 					ImVec2(sheenRight, maxY),
-					IM_COL32(255, 255, 255, (int)(sheenAlpha * 255)),
+					IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
 					IM_COL32(255, 255, 255, 0),
 					IM_COL32(255, 255, 255, 0),
-					IM_COL32(255, 255, 255, (int)((sheenAlpha * 0.55f) * 255))
+					IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255))
 				);
 			}
 		}
 	}
 
-	for (int i = 1; i <= 9; ++i)
+	for (int i = 1; i < 10; ++i)
 	{
 		float tx = minX + (barW * (i / 10.0f));
 		bool reached = tx <= (minX + fillWidth);
@@ -369,7 +286,7 @@ void Ui::RenderAnimatedPercentage(
 		drawList->AddLine(
 			ImVec2(tx, minY + 1),
 			ImVec2(tx, maxY - 1),
-			IM_COL32(255, 255, 255, (int)(a * 255)),
+			IM_COL32(255, 255, 255, static_cast<int>(a * 255)),
 			1.0f
 		);
 	}
@@ -397,6 +314,7 @@ void Ui::RenderAnimatedPercentage(
 }
 
 void Ui::RenderFancyHPBar(
+	CursorState& cursor,
 	const std::string& id,
 	float hpPct,
 	float height,
@@ -409,6 +327,7 @@ void Ui::RenderFancyHPBar(
 	ImVec4 hpHigh = ImVec4(0.2f, 0.9f, 0.2f, 1.0f);
 
 	RenderAnimatedPercentage(
+		cursor,
 		id,
 		hpPct,
 		height,
