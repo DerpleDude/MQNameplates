@@ -60,6 +60,7 @@ void DrawNameplates(PlayerClient* pSpawn)
 
 		// this draws above the nameplate so we can use a seperate cursor for it since it will not change the cursor for the plate.
 		CursorState cursor{ curPos };
+		int iconsDrawn = 0;
 		for (int i = 0; i < buffCount; i++)
 		{
 			auto buff = GetCachedBuffAtSlot(pSpawn, i);
@@ -70,8 +71,10 @@ void DrawNameplates(PlayerClient* pSpawn)
 				{
 					Ui::DrawInspectableSpellIcon(cursor, spell);
 
-					if (i == 0 || ((i + 1) < buffCount) && ((i + 1) % buffsPerRow) != 0)
+					if (iconsDrawn == 0 || ((iconsDrawn + 1) < buffCount) && ((iconsDrawn + 1) % buffsPerRow) != 0)
 						cursor.SameLine();
+
+					iconsDrawn += 1;
 				}
 			}
 
