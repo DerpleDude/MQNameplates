@@ -408,6 +408,11 @@ void Ui::AnimatedNameplatesSettings::LoadSettings()
 		IconSize = m_configNode["IconSize"].as<float>(IconSize);
 		BarRounding = m_configNode["BarRounding"].as<float>(BarRounding);
 		BarBorderThickness = m_configNode["BarBorderThickness"].as<float>(BarBorderThickness);
+		RenderForSelf = m_configNode["RenderForSelf"].as<bool>(RenderForSelf);
+		RenderForTarget = m_configNode["RenderForTarget"].as<bool>(RenderForTarget);
+		RenderForGroup = m_configNode["RenderForGroup"].as<bool>(RenderForGroup);
+		NameplateWidth = m_configNode["NameplateWidth"].as<float>(NameplateWidth);
+
 		Padding = ImVec2(
 			m_configNode["PaddingX"].as<float>(Padding.x),
 			m_configNode["PaddingY"].as<float>(Padding.y)
