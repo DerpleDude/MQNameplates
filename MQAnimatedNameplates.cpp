@@ -34,21 +34,21 @@ void DrawNameplates(PSPAWNINFO pSpawn)
 
 	const char* targetName = pSpawn->DisplayedName;
 	float pctHP = pSpawn->HPMax == 0 ? 0 : pSpawn->HPCurrent * 100.0f / pSpawn->HPMax;
-	std::string targetPctHPs = std::format("{:.0f}%", pctHP);
+	std::string targetPctHPs = fmt::format("{:.0f}%", pctHP);
 	int guildId = pSpawn->GuildID;
 	std::string targetGuild;
 	
 	if (Ui::Settings.GetShowGuild() && pGuild && guildId > 0)
 	{
-		targetGuild = std::format("<{}>", pGuild->GetGuildName(guildId));
+		targetGuild = fmt::format("<{}>", pGuild->GetGuildName(guildId));
 	}
 
 	if (Ui::Settings.GetShowPurpose() && GetSpawnType(pSpawn) == NPC && strlen(pSpawn->Lastname) > 0)
 	{
-		targetGuild = std::format("({})", pSpawn->Lastname);
+		targetGuild = fmt::format("({})", pSpawn->Lastname);
 	}
 
-	std::string classInfo = std::format("{} {}", pSpawn->GetLevel(), GetClassDesc(pSpawn->GetClass()));
+	std::string classInfo = fmt::format("{} {}", pSpawn->GetLevel(), GetClassDesc(pSpawn->GetClass()));
 
 	ImVec2 canvasSize(Ui::Settings.GetNameplateWidth(), 50);
 	float baseHeadOffset = 35.0f;
