@@ -1,4 +1,4 @@
-#include "Ui.h"
+﻿#include "Ui.h"
 #include "eqlib/EQLib.h"
 #include "mq/imgui/Widgets.h"
 #include "imgui/ImGuiUtils.h"
@@ -67,12 +67,6 @@ void Ui::DrawInspectableSpellIcon(CursorState& cursor, EQ_Spell* pSpell)
 			anim->SetCurCell(iconID);
 			mq::imgui::DrawTextureAnimation(dl, anim, cursorPos, size);
 		}
-	}
-
-	if (clicked && pSpell)
-	{
-		if (pSpellDisplayManager)
-			pSpellDisplayManager->ShowSpell(pSpell->ID, true, true, SpellDisplayType_SpellBookWnd);
 	}
 
 	cursor.Move(size);
@@ -298,6 +292,8 @@ void Ui::RenderAnimatedPercentage(CursorState& cursor, const std::string& id, fl
 
 	drawList->AddText(ImVec2(textX + 1, textY + 1), IM_COL32(0, 0, 0, 230), text.c_str());
 	drawList->AddText(ImVec2(textX, textY), IM_COL32(255, 255, 255, 255), text.c_str());
+
+	//Ui::DrawDragonWing(drawList, ImVec2(minX, minY), (maxY-minY)*8.0f, (maxX-minX), -1.0f, 1.0f);
 }
 
 void Ui::RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width,
@@ -350,6 +346,18 @@ void Ui::RenderSettingsPanel()
 	if (ImGui::Checkbox("Render No LOS", &renderNoLOS))
 		Settings.SetRenderNoLOS(renderNoLOS);
 
+	bool showClass = Settings.GetShowClass();
+	if (ImGui::Checkbox("Show Class", &showClass))
+		Settings.SetShowClass(showClass);
+
+	bool shortClassName = Settings.GetShortClassName();
+	if (ImGui::Checkbox("Short Class Name", &shortClassName))
+		Settings.SetShortClassName(shortClassName);
+
+	bool showLevel = Settings.GetShowLevel();
+	if (ImGui::Checkbox("Show Level", &showLevel))
+		Settings.SetShowLevel(showLevel);
+
 	bool showGuild = Settings.GetShowGuild();
 	if (ImGui::Checkbox("Show Guild", &showGuild))
 		Settings.SetShowGuild(showGuild);
@@ -358,24 +366,28 @@ void Ui::RenderSettingsPanel()
 	if (ImGui::Checkbox("Show Purpose", &showPurpose))
 		Settings.SetShowPurpose(showPurpose);
 
+	float nameplateHeightOffset = Settings.GetNameplateHeightOffset();
+	if (ImGui::InputFloat("Nameplate Height Offset", &nameplateHeightOffset, 1.0f, 1.0f, "%.1f"))
+		Settings.SetNameplateHeightOffset(nameplateHeightOffset);
+
 	float nameplateWidth = Settings.GetNameplateWidth();
-	if (ImGui::InputFloat("Nameplate Width", &nameplateWidth, 1.0f, 5.0f, "%.1f"))
+	if (ImGui::InputFloat("Nameplate Width", &nameplateWidth, 1.0f, 1.0f, "%.1f"))
 		Settings.SetNameplateWidth(nameplateWidth);
 
 	float fontSize = Settings.GetFontSize();
-	if (ImGui::InputFloat("Font Size", &fontSize, 1.0f, 5.0f, "%.1f"))
+	if (ImGui::InputFloat("Font Size", &fontSize, 1.0f, 1.0f, "%.1f"))
 		Settings.SetFontSize(fontSize);
 
 	float iconSize = Settings.GetIconSize();
-	if (ImGui::InputFloat("Icon Size", &iconSize, 1.0f, 5.0f, "%.1f"))
+	if (ImGui::InputFloat("Icon Size", &iconSize, 1.0f, 1.0f, "%.1f"))
 		Settings.SetIconSize(iconSize);
 
 	float barRounding = Settings.GetBarRounding();
-	if (ImGui::InputFloat("Bar Rounding", &barRounding, 1.0f, 5.0f, "%.1f"))
+	if (ImGui::InputFloat("Bar Rounding", &barRounding, 0.5f, 0.5f, "%.1f"))
 		Settings.SetBarRounding(barRounding);
 
 	float barBorderThickness = Settings.GetBarBorderThickness();
-	if (ImGui::InputFloat("Bar Border Thickness", &barBorderThickness, 1.0f, 5.0f, "%.1f"))
+	if (ImGui::InputFloat("Bar Border Thickness", &barBorderThickness, 0.5f, 0.5f, "%.1f"))
 		Settings.SetBarBorderThickness(barBorderThickness);
 }
 
@@ -387,21 +399,25 @@ void Ui::AnimatedNameplatesSettings::LoadSettings()
 	{
 		m_configNode = YAML::LoadFile(m_configFile);
 
-		m_showBuffIcons = m_configNode["ShowBuffIcons"].as<bool>(m_showBuffIcons);
-		m_showDebugPanel = m_configNode["ShowDebugPanel"].as<bool>(m_showDebugPanel);
-		m_fontSize = m_configNode["FontSize"].as<float>(m_fontSize);
-		m_iconSize = m_configNode["IconSize"].as<float>(m_iconSize);
-		m_barRounding = m_configNode["BarRounding"].as<float>(m_barRounding);
-		m_barBorderThickness = m_configNode["BarBorderThickness"].as<float>(m_barBorderThickness);
-		m_renderForSelf = m_configNode["RenderForSelf"].as<bool>(m_renderForSelf);
-		m_renderForTarget = m_configNode["RenderForTarget"].as<bool>(m_renderForTarget);
-		m_renderForGroup = m_configNode["RenderForGroup"].as<bool>(m_renderForGroup);
-		m_renderForAllHaters = m_configNode["RenderForAllHaters"].as<bool>(m_renderForAllHaters);
-		m_renderNoLOS = m_configNode["RenderNoLOS"].as<bool>(m_renderNoLOS);
-		m_nameplateWidth = m_configNode["NameplateWidth"].as<float>(m_nameplateWidth);
-		m_showGuild = m_configNode["ShowGuild"].as<bool>(m_showGuild);
-		m_showPurpose = m_configNode["ShowPurpose"].as<bool>(m_showPurpose);
-		m_renderToForeground = m_configNode["RenderToForeground"].as<bool>(m_renderToForeground);
+		m_showBuffIcons			= m_configNode["ShowBuffIcons"].as<bool>(m_showBuffIcons);
+		m_showDebugPanel		= m_configNode["ShowDebugPanel"].as<bool>(m_showDebugPanel);
+		m_fontSize				= m_configNode["FontSize"].as<float>(m_fontSize);
+		m_iconSize				= m_configNode["IconSize"].as<float>(m_iconSize);
+		m_barRounding			= m_configNode["BarRounding"].as<float>(m_barRounding);
+		m_barBorderThickness	= m_configNode["BarBorderThickness"].as<float>(m_barBorderThickness);
+		m_renderForSelf			= m_configNode["RenderForSelf"].as<bool>(m_renderForSelf);
+		m_renderForTarget		= m_configNode["RenderForTarget"].as<bool>(m_renderForTarget);
+		m_renderForGroup		= m_configNode["RenderForGroup"].as<bool>(m_renderForGroup);
+		m_renderForAllHaters	= m_configNode["RenderForAllHaters"].as<bool>(m_renderForAllHaters);
+		m_renderNoLOS			= m_configNode["RenderNoLOS"].as<bool>(m_renderNoLOS);
+		m_nameplateWidth		= m_configNode["NameplateWidth"].as<float>(m_nameplateWidth);
+		m_showGuild				= m_configNode["ShowGuild"].as<bool>(m_showGuild);
+		m_showPurpose			= m_configNode["ShowPurpose"].as<bool>(m_showPurpose);
+		m_renderToForeground	= m_configNode["RenderToForeground"].as<bool>(m_renderToForeground);
+		m_shortClassName		= m_configNode["ShortClassName"].as<bool>(m_shortClassName);
+		m_showClass				= m_configNode["ShowClass"].as<bool>(m_showClass);
+		m_showLevel			    = m_configNode["ShowLevel"].as<bool>(m_showLevel);
+		m_nameplateHeightOffset = m_configNode["NameplateHeightOffset"].as<float>(m_nameplateHeightOffset);
 
 		m_padding = ImVec2(
 			m_configNode["PaddingX"].as<float>(m_padding.x),
@@ -622,4 +638,10 @@ void Ui::AddRectFilledMultiColorRounded(ImDrawList& draw_list, const ImVec2& p_m
 
 	draw_list._VtxCurrentIdx += (ImDrawIdx)vtx_count;
 	draw_list.PathClear();
+}
+
+void Ui::DrawDragonWing(ImDrawList* dl, ImVec2 anchor, float height, float width, float dir, float alpha)
+{
+	//dl->AddImage(Settings.GetWingTextureID(), anchor, anchor+ImVec2(dir*width, dir*height), ImVec2(0,1), ImVec2(1,0), alpha);
+	dl->AddImage(Settings.GetWingTextureID(), anchor, anchor + ImVec2(dir * width, dir * height), ImVec2(1, 0), ImVec2(0, 1));
 }

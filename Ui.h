@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 
+#include "mq/Plugin.h"
+#include "mq/api/Textures.h"
 #include <yaml-cpp/yaml.h>
 #include <unordered_map>
 #include <string>
@@ -47,7 +49,7 @@ extern StateStruct State;
 class AnimatedNameplatesSettings
 {
 public:
-	AnimatedNameplatesSettings() { LoadSettings(); }
+	AnimatedNameplatesSettings() { m_wingTexture = CreateTexturePtr(fmt::format("{}\\{}", gPathResources, "wing.png")); LoadSettings(); }
 
 	void SaveSettings();
 	void LoadSettings();
@@ -68,6 +70,10 @@ public:
 	void SetShowGuild(bool show) { m_showGuild = show; m_configNode["ShowGuild"] = show; SaveSettings(); }
 	void SetShowPurpose(bool show) { m_showPurpose = show; m_configNode["ShowPurpose"] = show; SaveSettings(); }
 	void SetRenderToForeground(bool show) { m_renderToForeground = show; m_configNode["RenderToForeground"] = show; SaveSettings(); }
+	void SetShowClass(bool show) { m_showClass = show; m_configNode["ShowClass"] = show; SaveSettings(); }
+	void SetShortClassName(bool show) { m_shortClassName = show; m_configNode["ShortClassName"] = show; SaveSettings(); }
+	void SetShowLevel(bool show) { m_showLevel = show; m_configNode["ShowLevel"] = show; SaveSettings(); }
+	void SetNameplateHeightOffset(float offset) { m_nameplateHeightOffset = offset; m_configNode["NameplateHeightOffset"] = offset; SaveSettings(); }
 
 	bool GetShowBuffIcons() const { return m_showBuffIcons; }
 	const ImVec2& GetPadding() const { return m_padding; }
@@ -85,7 +91,11 @@ public:
 	bool GetShowGuild() const { return m_showGuild; }
 	bool GetShowPurpose() const { return m_showPurpose; }
 	bool GetRenderToForeground() const { return m_renderToForeground; }
-	
+	bool GetShowClass() const { return m_showClass; }
+	bool GetShortClassName() const { return m_shortClassName; }
+	bool GetShowLevel() const { return m_showLevel; }
+	float GetNameplateHeightOffset() const { return m_nameplateHeightOffset; }
+	ImTextureID GetWingTextureID() const { return m_wingTexture->GetTextureID(); }
 
 private:
 
@@ -93,8 +103,11 @@ private:
 	bool m_renderForTarget = true;
 	bool m_renderForGroup = true;
 	bool m_renderForAllHaters = true;
-	bool m_showGuild = true;
-	bool m_showPurpose = true;
+	bool m_showGuild = false;
+	bool m_showPurpose = false;
+	bool m_showLevel = true;
+	bool m_showClass = true;
+	bool m_shortClassName = false;
 	bool m_renderToForeground = true;
 	bool m_renderNoLOS = false;
 
@@ -106,8 +119,12 @@ private:
 	float m_iconSize = 20.0f;
 	float m_nameplateWidth = 500.0f;
 
+	float m_nameplateHeightOffset = 35.0f;
+
 	float m_barRounding = 6.0f;
 	float m_barBorderThickness = 2.5f;
+
+	mq::MQTexturePtr m_wingTexture;
 
 	std::string m_configFile = "MQAnimatedNameplates.yaml";
 	YAML::Node m_configNode;
@@ -127,6 +144,8 @@ void RenderAnimatedPercentage(CursorState& cursor, const std::string& id, float 
 	const std::string& label = "");
 void RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width, ImU32 hpHighlight,
 	const std::string& label = "");
+
+void DrawDragonWing(ImDrawList* dl, ImVec2 anchor, float height, float width, float dir, float alpha);
 
 void RenderSettingsPanel();
 
