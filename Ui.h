@@ -87,7 +87,6 @@ private:
 	bool m_showGuild = true;
 	bool m_showPurpose = true;
 
-
 	bool m_showBuffIcons = true;
 	bool m_showDebugPanel = false;
 

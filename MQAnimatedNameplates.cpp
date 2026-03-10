@@ -122,9 +122,7 @@ void DrawNameplates(PlayerClient* pSpawn)
 	curPos.x = (startXPos + canvasSize.x / 2) - (classWidth / 2 + Ui::Settings.GetPadding().x * 2);
 	cursor.SetPos(curPos);
 
-	float LineLength = displayNameWidth + hpWidth + classInfoWidth + Ui::Settings.GetPadding().x * 4;
-
-	if (LineLength >= Ui::Settings.GetNameplateWidth() * 0.9f)
+	if (curPos.x <= startXPos + displayNameWidth + Ui::Settings.GetPadding().x * 2)
 		cursor.NewLine();
 
 	Ui::RenderNamePlateText(cursor, textColor, classInfo.c_str());
