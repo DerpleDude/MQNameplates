@@ -361,6 +361,22 @@ void Ui::RenderSettingsPanel()
 	if (ImGui::Checkbox("Show Buff Icons", &showBuffIcons))
 		Settings.SetShowBuffIcons(showBuffIcons);
 
+	bool renderForSelf = Settings.GetRenderForSelf();
+	if (ImGui::Checkbox("Render For Self", &renderForSelf))
+		Settings.SetRenderForSelf(renderForSelf);
+
+	bool renderForTarget = Settings.GetRenderForTarget();
+	if (ImGui::Checkbox("Render For Target", &renderForTarget))
+		Settings.SetRenderForTarget(renderForTarget);
+
+	bool renderForGroup = Settings.GetRenderForGroup();
+	if (ImGui::Checkbox("Render For Group", &renderForGroup))
+		Settings.SetRenderForGroup(renderForGroup);
+
+	float nameplateWidth = Settings.GetNameplateWidth();
+	if (ImGui::SliderFloat("Nameplate Width", &nameplateWidth, 100.0f, 1500.0f))
+		Settings.SetNameplateWidth(nameplateWidth);
+
 	float fontSize = Settings.GetFontSize();
 	if (ImGui::SliderFloat("Font Size", &fontSize, 10.0f, 30.0f))
 		Settings.SetFontSize(fontSize);

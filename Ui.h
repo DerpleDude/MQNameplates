@@ -49,6 +49,10 @@ public:
 		void SetBarRounding(float rounding) { BarRounding = rounding; m_configNode["BarRounding"] = rounding; SaveSettings(); }
 		void SetBarBorderThickness(float thickness) { BarBorderThickness = thickness; m_configNode["BarBorderThickness"] = thickness; SaveSettings(); }
 		void SetShowDebugPanel(bool show) { ShowDebugPlanel = show; m_configNode["ShowDebugPanel"] = show; SaveSettings(); }
+		void SetRenderForSelf(bool show) { RenderForSelf = show; m_configNode["RenderForSelf"] = show; SaveSettings(); }
+		void SetRenderForTarget(bool show) { RenderForTarget = show; m_configNode["RenderForTarget"] = show; SaveSettings(); }
+		void SetRenderForGroup(bool show) { RenderForGroup = show; m_configNode["RenderForGroup"] = show; SaveSettings(); }
+		void SetNameplateWidth(float width) { NameplateWidth = width; m_configNode["NameplateWidth"] = width; SaveSettings(); }
 
 		bool GetShowBuffIcons() const { return ShowBuffIcons; }
 		const ImVec2& GetPadding() const { return Padding; }
@@ -57,13 +61,22 @@ public:
 		float GetBarRounding() const { return BarRounding; }
 		float GetBarBorderThickness() const { return BarBorderThickness; }
 		bool GetShowDebugPanel() const { return ShowDebugPlanel; }
+		bool GetRenderForSelf() const { return RenderForSelf; }
+		bool GetRenderForTarget() const { return RenderForTarget; }
+		bool GetRenderForGroup() const { return RenderForGroup; }
+		float GetNameplateWidth() const { return NameplateWidth; }
 
 	private:
+		bool RenderForSelf = true;
+		bool RenderForTarget = true;
+		bool RenderForGroup = true;
+
 		bool ShowBuffIcons = true;
 		bool ShowDebugPlanel = false;
 		ImVec2 Padding = ImVec2(8, 4);
 		float FontSize = 20.0f;
 		float IconSize = 20.0f;
+		float NameplateWidth = 500.0f;
 
 		float BarRounding = 6.0f;
 		float BarBorderThickness = 2.5f;

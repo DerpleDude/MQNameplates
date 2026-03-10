@@ -19,9 +19,12 @@
 PreSetup("MQAnimatedNameplates");
 PLUGIN_VERSION(0.1);
 
-void DrawNameplates()
+void DrawNameplates(PSPAWNINFO pSpawn)
 {
-	const CVector3 targetPos(pTarget->Y, pTarget->X, pTarget->Z + pTarget->Height);
+	if (!pSpawn)
+		return;
+
+	const CVector3 targetPos(pSpawn->Y, pSpawn->X, pSpawn->Z + pSpawn->Height);
 	float targetNameplatePosX, targetNameplatePosY;
 
 	pDisplay->pCamera->ProjectWorldCoordinatesToScreen(targetPos, targetNameplatePosX, targetNameplatePosY);
@@ -29,22 +32,22 @@ void DrawNameplates()
 
 	ImGui::PushFont(nullptr, Ui::Settings.GetFontSize());
 
-	const char* targetName = pTarget->DisplayedName;
-	float pctHP = pTarget->HPMax == 0 ? 0 : pTarget->HPCurrent * 100.0f / pTarget->HPMax;
+	const char* targetName = pSpawn->DisplayedName;
+	float pctHP = pSpawn->HPMax == 0 ? 0 : pSpawn->HPCurrent * 100.0f / pSpawn->HPMax;
 	char targetPctHPs[16];
 	sprintf_s(targetPctHPs, "%g%%", pctHP);
 
 	char classInfo[64];
-	sprintf_s(classInfo, "%d %s", pTarget->GetLevel(), GetClassDesc(pTarget->GetClass()));
+	sprintf_s(classInfo, "%d %s", pSpawn->GetLevel(), GetClassDesc(pSpawn->GetClass()));
 
-	ImVec2 canvasSize(500, 50);
+	ImVec2 canvasSize(Ui::Settings.GetNameplateWidth(), 50);
 	float baseHeadOffset = 35.0f;
 
 	if (Ui::Settings.GetShowBuffIcons())
 	{
 		int buffsPerRow = static_cast<int>(floor(canvasSize.x / (Ui::Settings.GetIconSize() + Ui::Settings.GetPadding().x)));
 
-		int buffCount = Ui::Settings.GetShowBuffIcons() ? GetCachedBuffCount(pTarget) : 0;
+		int buffCount = Ui::Settings.GetShowBuffIcons() ? GetCachedBuffCount(pSpawn) : 0;
 
 		double numBuffRows = ceil(buffCount / static_cast<float>(buffsPerRow));
 
@@ -64,7 +67,7 @@ void DrawNameplates()
 		CursorState cursor{ curPos };
 		for (int i = 0; i < buffCount; i++)
 		{
-			auto buff = GetCachedBuffAtSlot(pTarget, i);
+			auto buff = GetCachedBuffAtSlot(pSpawn, i);
 
 			if (buff.has_value())
 			{
@@ -97,7 +100,7 @@ void DrawNameplates()
 
 	ImU32 textColor = IM_COL32(255, 255, 255, 255);
 
-	ImU32 conColor = ConColorToARGB(ConColor(pTarget));
+	ImU32 conColor = ConColorToARGB(ConColor(pSpawn));
 
 	ImVec2 curPos(cursor.GetPos());
 	float startXPos = curPos.x;
@@ -124,7 +127,7 @@ void DrawNameplates()
 
 	std::string hpBarID =
 		std::string("TargetHPBar_") +
-		std::to_string(pTarget->GetId());
+		std::to_string(pSpawn->GetId());
 
 	Ui::RenderFancyHPBar(
 		cursor,
@@ -152,10 +155,21 @@ PLUGIN_API void OnUpdateImGui()
 {
 	if (GetGameState() == GAMESTATE_INGAME)
 	{
-		if (!pTarget || !pDisplay)
+		if (!pDisplay)
 			return;
 
-		DrawNameplates();
+		if (Ui::Settings.GetRenderForTarget())
+			DrawNameplates(pTarget);
+		if (Ui::Settings.GetRenderForSelf())
+			DrawNameplates(pLocalPC->pSpawn);
+		if (Ui::Settings.GetRenderForGroup() && pLocalPC->pGroupInfo)
+		{
+			for (int i = 0; i < MAX_GROUP_SIZE; i++)
+			{
+				auto groupMember = pLocalPC->pGroupInfo->GetGroupMember(i);
+				DrawNameplates(groupMember->GetPlayer());
+			}
+		}
 	}
 }
 
