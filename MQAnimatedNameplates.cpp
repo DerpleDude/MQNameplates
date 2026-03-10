@@ -1,4 +1,4 @@
-// MQAnimatedNameplates.cpp : Defines the entry point for the DLL application.
+﻿// MQAnimatedNameplates.cpp : Defines the entry point for the DLL application.
 //
 
 // PLUGIN_API is only to be used for callbacks.  All existing callbacks at this time
@@ -111,7 +111,7 @@ void DrawNameplates(PSPAWNINFO pSpawn)
 
 	ImU32 textColor = IM_COL32(255, 255, 255, 255);
 
-	ImU32 conColor = ConColorToARGB(ConColor(pSpawn));
+	ImU32 conColor = GetColorForChatColor(ConColor(pSpawn)).ToImU32();
 
 	ImVec2 curPos(cursor.GetPos());
 	float startXPos = curPos.x;
