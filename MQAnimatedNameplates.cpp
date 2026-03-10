@@ -30,6 +30,9 @@ void DrawNameplates(PSPAWNINFO pSpawn)
 	pDisplay->pCamera->ProjectWorldCoordinatesToScreen(targetPos, targetNameplatePosX, targetNameplatePosY);
 	bool open = true;
 
+	if (targetNameplatePosY <= 75)
+		targetNameplatePosY = 75; // move off screen if above a certain height so it doesn't draw in the middle of the screen when looking up at something.
+
 	ImGui::PushFont(nullptr, Ui::Settings.GetFontSize());
 
 	const char* targetName = pSpawn->DisplayedName;
