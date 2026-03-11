@@ -3,8 +3,6 @@
 #include "mq/imgui/Widgets.h"
 #include "imgui/ImGuiUtils.h"
 
-#include "imgui_internal.h"
-#include "imgui/imanim/im_anim.h"
 #include <mq/Plugin.h>
 
 #include <fstream>
@@ -336,89 +334,155 @@ void Ui::RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPc
 
 	RenderAnimatedPercentage(cursor, id, hpPct, height, width, hpLow, hpMid, hpHigh, highlightColor, label);
 }
-std::map<ImU32, float> checkBoxAnims;
 
-void RenderAnimatedCheckMark(ImDrawList* draw_list, ImVec2 pos, ImU32 col, float sz, float progress)
+void Ui::AnimatedCheckmark::Reset(bool newVal)
 {
+	ImU32 check_col = ImGui::GetColorU32(ImGuiCol_CheckMark);
+
+	m_newValue = newVal;
+
+	m_path1Time = 0.0f;
+	m_path2Time = 0.0f;
+
+	m_pathInitialized = false;
+	m_path1Complete = false;
+	m_path2Complete = false;
+}
+	
+void Ui::AnimatedCheckmark::Render(ImDrawList* dl, const ImRect& check_bb, float box_size)
+{
+	float dt = ImGui::GetIO().DeltaTime;
+
+	ImU32 check_col = ImGui::GetColorU32(ImGuiCol_CheckMark);
+
+	const float pad = ImMax(1.0f, IM_TRUNC(box_size / 6.0f));
+	float sz = box_size - pad * 2.0f;
+
 	float thickness = ImMax(sz / 5.0f, 1.0f);
 	sz -= thickness * 0.5f;
+
+	ImVec2 pos = check_bb.Min + ImVec2(pad, pad);
 	pos += ImVec2(thickness * 0.25f, thickness * 0.25f);
 
 	float third = sz / 3.0f;
 	float bx = pos.x + third;
 	float by = pos.y + sz - third * 0.5f;
 
-	ImVec2 p1(bx - third, by);
+	ImVec2 p1(bx - third, by - third);
 	ImVec2 p2(bx, by);
 	ImVec2 p3(bx + third * 2.0f, by - third * 2.0f);
-	ImVec2 end1 = p1;
-	ImVec2 end2 = p2;
-	/*
-	if (progress > 0.0f)
+
+	if (!m_pathInitialized)
 	{
-		float seg1 = ImClamp(progress * 2.5f, 0.0f, 1.0f);
-		ImVec2 end1 = ImLerp(p1, p2, seg1);
-		dl->AddLine(p1, end1, check_col, thickness);
+		m_pathInitialized = true;
+		m_path1Time = 0.0f;
+		m_path2Time = 0.0f;
+
+		if (m_newValue)
+		{ 
+			iam_path::begin(m_animIdPath1, p1)
+				.line_to(p2)
+				.end();
+
+			iam_path::begin(m_animIdPath2, p2)
+				.line_to(p3)
+				.end();
+		}
+		else
+		{
+			iam_path::begin(m_animIdPath1, p3)
+				.line_to(p2)
+				.end();
+
+			iam_path::begin(m_animIdPath2, p2)
+				.line_to(p1)
+				.end();
+		}
 	}
 
-	if (progress > 0.4f)
+	if (!m_path1Complete)
 	{
-		float seg2 = ImClamp((check_progress - 0.4f) * 2.5f, 0.0f, 1.0f);
-		ImVec2 end2 = ImLerp(p2, p3, seg2);
-		dl->AddLine(p2, end2, check_col, thickness);
+		m_path1Time += dt * m_animSpeed;
+
+		auto ap1 = iam_path_evaluate(m_animIdPath1, m_path1Time);
+
+		if (m_newValue)
+			dl->AddLine(p1, ap1, check_col, thickness);
+		else
+			dl->AddLine(p2, ap1, check_col, thickness);
+
+		m_path1Complete = m_path1Time > 1.0f;
 	}
-	*/
-	draw_list->PathLineTo(ImVec2(bx - third, by - third));
-	draw_list->PathLineTo(ImVec2(bx, by));
-	draw_list->PathLineTo(ImVec2(bx + third * 2.0f, by - third * 2.0f));
-	draw_list->PathStroke(col, 0, thickness);
+	else
+	{
+		if (m_newValue)
+			dl->AddLine(p1, p2, check_col, thickness);
+	}
+
+	if (m_path1Complete && !m_path2Complete)
+	{
+		m_path2Time += dt * m_animSpeed;
+
+		auto ap2 = iam_path_evaluate(m_animIdPath2, m_path2Time);
+
+		if (m_newValue)
+			dl->AddLine(p2, ap2, check_col, thickness);
+		else
+			dl->AddLine(p1, ap2, check_col, thickness);
+
+		m_path2Complete = m_path2Time > 1.0f;
+	}
+	else
+	{
+		if (m_path2Complete && m_newValue)
+			dl->AddLine(p2, p3, check_col, thickness);
+
+		if (!m_path1Complete && !m_newValue)
+			dl->AddLine(p2, p1, check_col, thickness);
+	}
 }
+
+std::map<ImU32, Ui::AnimatedCheckmark> checkBoxAnims;
 
 bool Ui::AnimatedCheckbox(const std::string& label, bool* value)
 {
 	ImU32 animId = ImHashStr(label.c_str());
-	auto [it, inserted] = checkBoxAnims.try_emplace(animId, 0.0f);
-	auto& check_anims = it->second;
-	bool valueStart = *value;
 
-	float dt = ImGui::GetIO().DeltaTime;
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 
-	ImVec2 pos = ImGui::GetCursorScreenPos();
-	float line_height = ImGui::GetTextLineHeight();
-
-	ImGui::PushID(label.c_str());
+	ImVec2 box_pos = ImGui::GetCursorScreenPos();
 
 	float box_size = ImGui::GetFrameHeight();
-	ImVec2 box_pos(pos);
-	//ImVec2 box_min = box_pos;
-	//ImVec2 box_max(box_pos.x + box_size, box_pos.y + box_size);
+	const ImRect check_bb(box_pos, box_pos + ImVec2(box_size, box_size));
+	float line_height = ImGui::GetTextLineHeight();
+
 	ImVec2 label_size = ImGui::CalcTextSize(label.c_str());
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	// Invisible button for interaction
+	auto [it, inserted] = checkBoxAnims.try_emplace(animId, Ui::AnimatedCheckmark(*value, ImHashStr(fmt::format("{}_path1", label).c_str()), ImHashStr(fmt::format("{}_path2", label).c_str())));
+	auto& animState = it->second;
+	bool valueStart = *value;
+
+	ImGui::PushID(label.c_str());
+
 	ImGui::SetCursorScreenPos(box_pos);
 
-	// Animate check state
-	float target = *value ? 1.0f : 0.0f;
-	check_anims = iam_tween_float(animId, ImHashStr("anim"), target, 1.25f,
-		iam_ease_preset(iam_ease_out_back), iam_policy_crossfade, dt);
-
-	// Box background
-	float check_progress = ImClamp(check_anims * 1.2f, 0.0f, 1.0f);
+	// interactions
 	bool hovered, held;
 	const ImRect total_bb(box_pos, box_pos + ImVec2(box_size + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + style.FramePadding.y * 2.0f));
 	const ImGuiID id = ImGui::GetID(label.c_str());
 	const bool is_visible = ImGui::ItemAdd(total_bb, id);
 	bool pressed = ImGui::ButtonBehavior(total_bb, id, &hovered, &held);
 
-	if (pressed)
+	if (pressed || inserted)
 	{
-		(*value) = !(*value);
+		if (pressed)
+			(*value) = !(*value);
+
+		animState.Reset(*value);
 	}
-
-	const ImRect check_bb(pos, pos + ImVec2(box_size, box_size));
-
+	
+	// Box background
 	ImU32 box_bg = ImGui::GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
 	const float border_size = style.FrameBorderSize;
 	ImVec2 center = (check_bb.Min + check_bb.Max) * 0.5f;
@@ -428,39 +492,7 @@ bool Ui::AnimatedCheckbox(const std::string& label, bool* value)
 	dl->AddRect(check_bb.Min, check_bb.Max, ImGui::GetColorU32(ImGuiCol_Border), style.FrameRounding);
 
 	// Draw animated checkmark
-	if (check_anims > 0.01f)
-	{
-		ImU32 check_col = ImGui::GetColorU32(ImGuiCol_CheckMark);
-
-		ImVec2 p1(center.x - box_size * 0.3f, center.y);
-		ImVec2 p2(center.x - box_size * 0.05f, center.y + box_size * 0.2f);
-		ImVec2 p3(center.x + box_size * 0.3f, center.y - box_size * 0.2f);
-
-		float thickness = 2.5f;
-		
-		if (check_progress > 0.0f)
-		{
-			float seg1 = ImClamp(check_progress * 2.5f, 0.0f, 1.0f);
-			ImVec2 end1 = ImLerp(p1, p2, seg1);
-			dl->AddLine(p1, end1, check_col, thickness);
-		}
-
-		if (check_progress > 0.4f)
-		{
-			float seg2 = ImClamp((check_progress - 0.4f) * 2.5f, 0.0f, 1.0f);
-			ImVec2 end2 = ImLerp(p2, p3, seg2);
-			dl->AddLine(p2, end2, check_col, thickness);
-		}
-
-		/*
-		iam_path::begin(id, p1)
-			.line_to(p2)
-			.line_to(p3)
-			.end();
-			*/
-		const float pad = ImMax(1.0f, ImTrunc((box_size / 6.0f)));
-		//RenderAnimatedCheckMark(dl, check_bb.Min + ImVec2(pad, pad), check_col, box_size - pad * 2.0f, check_progress);
-	}
+	animState.Render(dl, check_bb, box_size);
 
 	// Label
 	const ImVec2 label_pos = ImVec2(check_bb.Max.x + style.ItemInnerSpacing.x, check_bb.Min.y + style.FramePadding.y);
@@ -468,11 +500,225 @@ bool Ui::AnimatedCheckbox(const std::string& label, bool* value)
 
 	ImGui::PopID();
 
-	ImGui::SetCursorScreenPos(ImVec2(pos.x, pos.y + line_height + Ui::Settings.GetPadding().y));
+	ImGui::SetCursorScreenPos(ImVec2(total_bb.Min.x, total_bb.Max.y));
 	ImGui::Dummy(ImVec2(1, 1));
 
 	return pressed;
 }
+
+bool Ui::AnimatedSlider(const std::string& label, float* slider_value, float slider_min, float slider_max, const char* format, float labelWidthOverride)
+{
+	const ImGuiID id = ImGui::GetID(label.c_str());
+
+	float dt = ImGui::GetIO().DeltaTime;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	bool changed = false;
+
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	float thumb_radius = 8.0f;
+
+	ImVec2 label_size = ImGui::CalcTextSize(label.c_str(), NULL, true);
+	bool AnimatedSlider(const std::string & label, float* slider_value, float slider_min, float slider_max, const char* format = "%.2f", float labelWidthOverride = 0.0f);
+	if (labelWidthOverride > 0.0f)
+		label_size.x = labelWidthOverride;
+
+	label_size.x += label_size.x > 0.0f ? thumb_radius : 0.0f;
+	const float slider_width = ImGui::CalcItemWidth() - label_size.x;
+	float slider_height = label_size.y / 4.0f + style.FramePadding.y * 2.0f;
+
+	char value_text[16];
+	snprintf(value_text, sizeof(value_text), format, (*slider_value));
+	ImVec2 value_size = ImGui::CalcTextSize(value_text);
+
+	const ImRect frame_bb(pos, pos + ImVec2(slider_width, label_size.y + style.FramePadding.y * 2.0f));
+	const ImRect total_bb(pos, pos + ImVec2(slider_width + (value_size.x > 0.0f ? value_size.x + style.ItemInnerSpacing.x : 0.0f) + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + style.FramePadding.y * 2.0f));
+
+	ImGui::PushID(label.c_str());
+
+	ImVec2 label_pos = ImVec2(pos.x, pos.y + (((total_bb.Max.y - total_bb.Min.y) - label_size.y) / 2.0f));
+	// Label
+	dl->AddText(label_pos, ImGui::GetColorU32(ImGuiCol_Text), label.c_str());
+
+	// Track position
+	float track_x = pos.x + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f);
+	float track_y = label_pos.y + ImGui::GetFontSize() * 0.5f - slider_height * 0.5f;
+
+	// Track background
+	dl->AddRectFilled(
+		ImVec2(track_x, track_y),
+		ImVec2(track_x + slider_width, track_y + slider_height),
+		ImGui::GetColorU32(ImGuiCol_TextDisabled), slider_height * 0.5f);
+
+	bool hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
+
+	float relativeValue = (*slider_value) / slider_max;
+
+	// Filled portion with glow
+	float fill_width = relativeValue * slider_width;
+	const ImU32 frame_color = ImGui::GetColorU32(ImGui::GetCurrentContext()->ActiveId == id ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+	dl->AddRectFilled(
+		ImVec2(track_x, track_y),
+		ImVec2(track_x + fill_width, track_y + slider_height),
+		frame_color, slider_height * 0.5f);
+
+	// Thumb position
+	float thumb_x = track_x + fill_width;
+	float thumb_y = track_y + slider_height * 0.5f;
+
+	ImGui::SetCursorScreenPos(ImVec2(track_x - thumb_radius, track_y - thumb_radius));
+	ImGui::InvisibleButton("##slider", ImVec2(slider_width + thumb_radius * 1.5f, slider_height + thumb_radius * 2));
+
+	if (ImGui::IsItemActive())
+	{
+		float mouse_x = ImGui::GetIO().MousePos.x;
+		float relativeValue = ImClamp((mouse_x - track_x) / slider_width, 0.0f, 1.0f);
+
+		*slider_value = slider_min + relativeValue * (slider_max - slider_min);
+
+		changed = true;
+
+		fill_width = relativeValue * slider_width;
+		thumb_x = track_x + fill_width;
+		thumb_y = track_y + slider_height * 0.5f;
+	}
+	bool active = ImGui::IsItemActive();
+
+	hovered = ImGui::IsItemHovered() || active;
+
+	// Animate thumb scale
+	float target_scale = hovered ? 1.3f : 1.0f;
+	float thumb_scale = iam_tween_float(id, ImHashStr("scale"), target_scale, 0.15f,
+		iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
+
+	// Draw thumb glow when hovered
+	if (thumb_scale > 1.1f)
+	{
+		dl->AddCircleFilled(ImVec2(thumb_x, thumb_y), thumb_radius * thumb_scale * 1.5f,
+			IM_COL32(255, 255, 255, 30));
+	}
+
+	// Thumb
+	dl->AddCircleFilled(ImVec2(thumb_x, thumb_y), thumb_radius * thumb_scale, ImGui::GetColorU32(active ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
+	dl->AddCircle(ImVec2(thumb_x, thumb_y), thumb_radius * thumb_scale, frame_color, 0, 2.0f);
+
+	// Value text
+	dl->AddText(ImVec2(track_x + thumb_radius + slider_width + style.ItemInnerSpacing.x, label_pos.y), ImGui::GetColorU32(ImGuiCol_Text), value_text);
+
+	ImGui::PopID();
+
+	ImGui::SetCursorScreenPos(ImVec2(total_bb.Min.x, total_bb.Max.y));
+	ImGui::Dummy(ImVec2(1, 1));
+
+	return changed;
+}
+
+struct AnimatedComboState
+{
+	bool open = false;
+	float open_time = 0.0f;
+};
+
+std::map<ImU32, AnimatedComboState> comboAnimTimes;
+
+bool Ui::AnimatedCombo(const std::string& label, int* value, std::vector<std::string> items)
+{
+	ImU32 animId = ImHashStr(label.c_str());
+	bool changed = false;
+
+	float dt = ImGui::GetIO().DeltaTime;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	ImDrawList* tdl = ImGui::GetForegroundDrawList();
+
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	int item_count = items.size();
+
+	auto [it, inserted] = comboAnimTimes.try_emplace(animId, AnimatedComboState());
+	auto& animState = it->second;
+	bool valueStart = *value;
+
+	if (animState.open) animState.open_time += dt;
+	else animState.open_time = 0.0f;
+
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	float btn_width = ImGui::CalcItemWidth();
+	float item_height = ImGui::GetTextLineHeight();
+	float btn_height = item_height + style.FramePadding.y * 2.0f;
+	ImVec2 label_size = ImGui::CalcTextSize(label.c_str());
+	
+	const ImRect total_bb(pos, pos + ImVec2(btn_width + (label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f), label_size.y + style.FramePadding.y * 2.0f));
+
+	ImGui::PushID(label.c_str());
+	// Dropdown button
+	ImGui::InvisibleButton("dropdown_btn", ImVec2(btn_width, btn_height));
+	if (ImGui::IsItemClicked()) animState.open = !animState.open;
+
+	dl->AddRectFilled(pos, ImVec2(pos.x + btn_width, pos.y + btn_height),
+		IM_COL32(60, 65, 75, 255), 4);
+	dl->AddText(ImVec2(pos.x + 10, pos.y + (btn_height - ImGui::GetFontSize()) * 0.5f),
+		IM_COL32(255, 255, 255, 255), items[*value].c_str());
+
+	// Arrow
+	float arrow_x = pos.x + btn_width - 20;
+	float arrow_y = pos.y + btn_height * 0.5f;
+	float arrow_rot = iam_tween_float(animId, ImHashStr("ar"),
+		animState.open ? 3.14159f : 0.0f, 0.2f, iam_ease_preset(iam_ease_out_quad), iam_policy_crossfade, dt);
+	dl->AddTriangleFilled(
+		ImVec2(arrow_x - 5, arrow_y - 3 * (animState.open ? -1 : 1)),
+		ImVec2(arrow_x + 5, arrow_y - 3 * (animState.open ? -1 : 1)),
+		ImVec2(arrow_x, arrow_y + 5 * (animState.open ? -1 : 1)),
+		IM_COL32(180, 180, 190, 255));
+
+	// Dropdown menu
+	float menu_height = iam_tween_float(animId, ImHashStr("mh"),
+		animState.open ? item_count * item_height : 0.0f, 0.25f, iam_ease_preset(iam_ease_out_quad), iam_policy_crossfade, dt);
+
+	if (menu_height > 1.0f)
+	{
+		ImVec2 menu_pos(pos.x, pos.y + btn_height + 2);
+		tdl->AddRectFilled(menu_pos, ImVec2(menu_pos.x + btn_width, menu_pos.y + menu_height),
+			IM_COL32(50, 55, 65, 255), 4);
+
+		for (int i = 0; i < item_count; i++)
+		{
+			float item_y = menu_pos.y + i * item_height;
+			if (item_y + item_height > menu_pos.y + menu_height) break;
+
+			// Staggered fade in
+			float item_alpha = ImClamp((animState.open_time - i * 0.05f) * 5.0f, 0.0f, 1.0f);
+			float item_offset = (1.0f - item_alpha) * 10;
+
+			ImVec2 item_pos(menu_pos.x + 10 + item_offset, item_y + (item_height - ImGui::GetFontSize()) * 0.5f);
+			ImGui::SetCursorScreenPos(item_pos);
+			ImGui::InvisibleButton(fmt::format("##menuitem{}", i).c_str(), ImVec2(btn_width, item_height));
+
+			bool active = ImGui::IsItemActive();
+
+			tdl->AddText(item_pos, IM_COL32(200, 200, 210, (int)(item_alpha * 255)), items[i].c_str());
+
+			if (active && ImGui::IsMouseClicked(0))
+			{
+				*value = i;
+				changed = true;
+				animState.open = false;
+				break;
+			}
+		}
+	}
+
+	// Label  text
+	dl->AddText(ImVec2(pos.x + btn_width + style.ItemInnerSpacing.x, pos.y), ImGui::GetColorU32(ImGuiCol_Text), label.c_str());
+
+	ImGui::PopID();
+
+	ImGui::SetCursorScreenPos(ImVec2(total_bb.Min.x, total_bb.Max.y));
+	ImGui::Dummy(ImVec2(1, 1));
+
+	return changed;
+}
+
 
 void Ui::RenderSettingsPanel() 
 {
@@ -516,7 +762,7 @@ void Ui::RenderSettingsPanel()
 		{ 1, "Look and Feel", []() 
 			{
 				Ui::AnimatedNameplatesSettings::HPBarStyle hpBarStyle = Settings.GetHPBarStyle();
-				if (ImGui::Combo("HP Bar Style", reinterpret_cast<int*>(&hpBarStyle), "Solid Red\0Con Color\0Color Range\0"))
+				if (Ui::AnimatedCombo("HP Bar Style", reinterpret_cast<int*>(&hpBarStyle), { "Solid Red", "Con Color", "Color Range" }))
 					Settings.SetHPBarStyle(hpBarStyle);
 
 				ImGui::NewLine();
@@ -548,29 +794,33 @@ void Ui::RenderSettingsPanel()
 		},
 		{ 2, "Size & Positioning", []() 
 			{
+				float sliderLabelWidth = ImGui::CalcTextSize("Nameplate Height Offset").x;
+				const char* valueFormat = "%.1f";
 				float nameplateHeightOffset = Settings.GetNameplateHeightOffset();
-				if (ImGui::InputFloat("Nameplate Height Offset", &nameplateHeightOffset, 1.0f, 1.0f, "%.1f"))
+				if (Ui::AnimatedSlider("Nameplate Height Offset", &nameplateHeightOffset, 0.0f, 300.0f, valueFormat, sliderLabelWidth))
 					Settings.SetNameplateHeightOffset(nameplateHeightOffset);
 
 				float nameplateWidth = Settings.GetNameplateWidth();
-				if (ImGui::InputFloat("Nameplate Width", &nameplateWidth, 1.0f, 1.0f, "%.1f"))
+				if (Ui::AnimatedSlider("Nameplate Width", &nameplateWidth, 25.0f, 800.0f, valueFormat, sliderLabelWidth))
 					Settings.SetNameplateWidth(nameplateWidth);
 
 				float fontSize = Settings.GetFontSize();
-				if (ImGui::InputFloat("Font Size", &fontSize, 1.0f, 1.0f, "%.1f"))
+				if (Ui::AnimatedSlider("Font Size", &fontSize, 1.0f, 40.0f, valueFormat, sliderLabelWidth))
 					Settings.SetFontSize(fontSize);
 
 				float iconSize = Settings.GetIconSize();
-				if (ImGui::InputFloat("Icon Size", &iconSize, 1.0f, 1.0f, "%.1f"))
+				if (Ui::AnimatedSlider("Icon Size", &iconSize, 10.0f, 40.0f, valueFormat, sliderLabelWidth))
 					Settings.SetIconSize(iconSize);
 
 				float barRounding = Settings.GetBarRounding();
-				if (ImGui::InputFloat("Bar Rounding", &barRounding, 0.5f, 0.5f, "%.1f"))
+				if (Ui::AnimatedSlider("Bar Rounding", &barRounding, 0.0f, 10.0f, valueFormat, sliderLabelWidth))
 					Settings.SetBarRounding(barRounding);
 
 				float barBorderThickness = Settings.GetBarBorderThickness();
-				if (ImGui::InputFloat("Bar Border Thickness", &barBorderThickness, 0.5f, 0.5f, "%.1f"))
+				if (Ui::AnimatedSlider("Bar Border Thickness", &barBorderThickness, 0.0f, 5.0f, valueFormat, sliderLabelWidth))
 					Settings.SetBarBorderThickness(barBorderThickness);
+
+				ImGui::NewLine();
 
 				bool renderToForeground = Settings.GetRenderToForeground();
 				if (Ui::AnimatedCheckbox("Always on Top", &renderToForeground))
@@ -658,8 +908,10 @@ void Ui::RenderSettingsPanel()
 	float content_alpha = iam_tween_float(id, ImHashStr("animmp_content"), 1.0f, 0.2f,
 		iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
-	ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + Ui::Settings.GetPadding().y));
+	ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + Ui::Settings.GetPadding().y * 2.0f));
+	ImGui::Indent(Ui::Settings.GetPadding().x);
 	tabs[active_tab].content();
+	ImGui::Unindent(Ui::Settings.GetPadding().x);
 
 	ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + content_size.y + Ui::Settings.GetPadding().y));
 	ImGui::Dummy(ImVec2(0.0f, 0.0f));

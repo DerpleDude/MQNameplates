@@ -1,6 +1,8 @@
 #pragma once
 
 #include "imgui.h"
+#include "imgui_internal.h"
+#include "imgui/imanim/im_anim.h"
 
 #include "mq/Plugin.h"
 #include "mq/api/Textures.h"
@@ -138,6 +140,31 @@ private:
 	YAML::Node m_configNode;
 };
 
+class AnimatedCheckmark
+{
+public:
+	AnimatedCheckmark(bool value, ImGuiID path1Id, ImGuiID path2Id) : m_newValue(value), m_animIdPath1(path1Id), m_animIdPath2(path2Id)
+	{
+		Reset(value);
+	}
+
+	void Reset(bool newVal);
+	void Render(ImDrawList* dl, const ImRect& check_bb, float box_size);
+	
+private:
+	ImGuiID m_animIdPath1;
+	ImGuiID m_animIdPath2;
+
+	float m_path1Time = 0.0f;
+	float m_path2Time = 0.0f;
+	bool  m_newValue = false;
+	bool  m_pathInitialized = false;
+	bool  m_path1Complete = false;
+	bool  m_path2Complete = false;
+	float m_animSpeed = 6.0f;
+
+};
+
 extern AnimatedNameplatesSettings Settings;
 
 void RenderNamePlateText(CursorState& cursor, ImU32 color, const char* text);
@@ -156,6 +183,8 @@ void RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, f
 
 void RenderSettingsPanel();
 bool AnimatedCheckbox(const std::string& label, bool* value);
+bool AnimatedSlider(const std::string& label, float* slider_value, float slider_min, float slider_max, const char* format = "%.2f", float labelWidthOverride = 0.0f);
+bool AnimatedCombo(const std::string& label, int* value, std::vector<std::string> items);
 
 ImDrawList* GetDrawList();
 
