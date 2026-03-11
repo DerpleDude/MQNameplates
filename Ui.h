@@ -49,7 +49,14 @@ extern StateStruct State;
 class AnimatedNameplatesSettings
 {
 public:
-	AnimatedNameplatesSettings() { m_wingTexture = CreateTexturePtr(fmt::format("{}\\{}", gPathResources, "wing.png")); LoadSettings(); }
+	enum HPBarStyle
+	{
+		HPBarStyle_SolidRed,
+		HPBarStyle_ConColor,
+		HPBarStyle_ColorRange
+	};
+
+	AnimatedNameplatesSettings() { LoadSettings(); }
 
 	void SaveSettings();
 	void LoadSettings();
@@ -74,6 +81,7 @@ public:
 	void SetShortClassName(bool show) { m_shortClassName = show; m_configNode["ShortClassName"] = show; SaveSettings(); }
 	void SetShowLevel(bool show) { m_showLevel = show; m_configNode["ShowLevel"] = show; SaveSettings(); }
 	void SetNameplateHeightOffset(float offset) { m_nameplateHeightOffset = offset; m_configNode["NameplateHeightOffset"] = offset; SaveSettings(); }
+	void SetHPBarStyle(HPBarStyle style) { m_hpBarStyle = style; m_configNode["HPBarStyle"] = static_cast<int>(style); SaveSettings(); }
 
 	bool GetShowBuffIcons() const { return m_showBuffIcons; }
 	const ImVec2& GetPadding() const { return m_padding; }
@@ -95,7 +103,7 @@ public:
 	bool GetShortClassName() const { return m_shortClassName; }
 	bool GetShowLevel() const { return m_showLevel; }
 	float GetNameplateHeightOffset() const { return m_nameplateHeightOffset; }
-	ImTextureID GetWingTextureID() const { return m_wingTexture->GetTextureID(); }
+	HPBarStyle GetHPBarStyle() const { return m_hpBarStyle; }
 
 private:
 
@@ -124,7 +132,7 @@ private:
 	float m_barRounding = 6.0f;
 	float m_barBorderThickness = 2.5f;
 
-	mq::MQTexturePtr m_wingTexture;
+	HPBarStyle m_hpBarStyle = HPBarStyle_ColorRange;
 
 	std::string m_configFile = "MQAnimatedNameplates.yaml";
 	YAML::Node m_configNode;
@@ -139,15 +147,15 @@ void AddRectFilledMultiColorRounded(ImDrawList& draw_list, const ImVec2& p_min, 
 void RenderNamePlateRect(CursorState& cursor, const ImVec2& size, ImU32 color, float rounding,
 	float thickness, bool filled);
 void DrawInspectableSpellIcon(CursorState& cursor, eqlib::EQ_Spell* pSpell);
-void RenderAnimatedPercentage(CursorState& cursor, const std::string& id, float barPct, float height, float width,
-	const ImVec4& colLow, const ImVec4& colMid, const ImVec4& colHigh, ImU32 colHighlight,
-	const std::string& label = "");
-void RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width, ImU32 hpHighlight,
-	const std::string& label = "");
 
-void DrawDragonWing(ImDrawList* dl, ImVec2 anchor, float height, float width, float dir, float alpha);
+void RenderAnimatedPercentage(CursorState& cursor, const std::string& id, const float barPct, const float height, const float width,
+	ImU32 colLow, ImU32 colMid, ImU32 colHigh, ImU32 colHighlight, const std::string& label = "");
+
+void RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width, ImU32 conColor, bool currentTarget,
+	const std::string& label = "");
 
 void RenderSettingsPanel();
+bool AnimatedCheckbox(const std::string& label, bool* value);
 
 ImDrawList* GetDrawList();
 

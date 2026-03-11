@@ -38,7 +38,7 @@ void DrawNameplates(PlayerClient* pSpawn)
 	
 	ImVec2 targetNameplateTopLeft{ FLT_MAX, FLT_MAX };
 	ImVec2 targetNameplateBottomRight{ 0.0f, 0.0f };
-
+		
 	ImGui::PushFont(nullptr, Ui::Settings.GetFontSize());
 
 	ImVec2 canvasSize(Ui::Settings.GetNameplateWidth(), 50);
@@ -194,6 +194,7 @@ void DrawNameplates(PlayerClient* pSpawn)
 		ImGui::GetTextLineHeight() * 0.75f,
 		canvasSize.x - Ui::Settings.GetPadding().x * 2,
 		conColor,
+		pTarget == pSpawn,
 		""
 	);
 	ImGui::PopFont();
