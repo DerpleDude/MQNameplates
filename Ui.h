@@ -297,6 +297,13 @@ ImDrawList* GetDrawList();
 
 } // namespace Ui
 
+struct AnimatedTabState
+{
+    int                   idx;
+    std::string           name;
+    std::function<void()> content;
+};
+
 struct AnimatedComboState
 {
     bool  open      = false;

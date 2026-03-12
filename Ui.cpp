@@ -680,6 +680,11 @@ bool Ui::AnimatedCombo(const std::string& label, int* value, std::vector<std::st
 
 void Ui::RenderSettingsPanel()
 {
+    ImGui::BeginChild(
+        "##AnimatedNameplatesSettings",
+        ImVec2(std::max(ImGui::GetContentRegionAvail().x, 400.0f), std::max(ImGui::GetContentRegionAvail().y, 250.0f)),
+        ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar);
+
     ImGui::PushFont(mq::imgui::LargeTextFont);
     ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.2f, 1.0f), "Nameplate Settings");
     ImGui::Separator();
@@ -690,14 +695,7 @@ void Ui::RenderSettingsPanel()
 
     static int active_tab = 0;
 
-    struct TabData
-    {
-        int                   idx;
-        std::string           name;
-        std::function<void()> content;
-    };
-
-    std::vector<TabData> tabs = {
+    std::vector<AnimatedTabState> tabs = {
         {0, "Targeting",
          []()
          {
@@ -801,14 +799,16 @@ void Ui::RenderSettingsPanel()
          }},
     };
 
-    ImVec2 tabs_pos    = ImGui::GetCursorScreenPos();
-    float  tab_height  = 36.0f;
-    float  total_width = ImGui::GetContentRegionAvail().x;
-    float  tab_width   = floor(total_width / tabs.size());
+    ImGuiStyle& style       = ImGui::GetStyle();
+    ImVec2      tabs_pos    = ImGui::GetCursorScreenPos();
+    float       tab_height  = ImGui::GetTextLineHeightWithSpacing() * 1.5f;
+    float       total_width = ImGui::GetContentRegionAvail().x;
+    float       tab_width   = floor(total_width / tabs.size());
 
     // Draw tab background
-    dl->AddRectFilled(tabs_pos, ImVec2(tabs_pos.x + total_width, tabs_pos.y + tab_height), IM_COL32(35, 38, 48, 255),
-                      4.0f, ImDrawFlags_RoundCornersTop);
+    dl->AddRectFilled(tabs_pos, ImVec2(tabs_pos.x + total_width, tabs_pos.y + tab_height),
+                      ImGui::GetColorU32(ImGuiCol_TableHeaderBg), //(35, 38, 48, 255),
+                      2.0f, ImDrawFlags_RoundCornersTop);
 
     // Calculate target indicator position
     float target_x = tabs_pos.x;
@@ -847,7 +847,7 @@ void Ui::RenderSettingsPanel()
         // Draw text
         ImVec2 text_size = ImGui::CalcTextSize(tab.name.c_str());
         ImVec2 text_pos(x + (tab_width - text_size.x) * 0.5f, tabs_pos.y + (tab_height - text_size.y) * 0.5f);
-        dl->AddText(text_pos, IM_COL32(255, 255, 255, (int)(text_alpha * 255)), tab.name.c_str());
+        dl->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Text), tab.name.c_str());
 
         x += tab_width;
     }
@@ -855,15 +855,16 @@ void Ui::RenderSettingsPanel()
     // Draw animated indicator
     float indicator_y = tabs_pos.y + tab_height - 3.0f;
     dl->AddRectFilled(ImVec2(indicator_x + 8.0f, indicator_y),
-                      ImVec2(indicator_x + indicator_width - 8.0f, indicator_y + 3.0f), IM_COL32(91, 194, 231, 255),
-                      2.0f);
+                      ImVec2(indicator_x + indicator_width - 8.0f, indicator_y + 3.0f),
+                      ImGui::GetColorU32(ImGuiCol_TabSelected), // IM_COL32(91, 194, 231, 255),
+                      4.0f);
 
     // Content area with fade
     ImVec2 content_pos(tabs_pos.x, tabs_pos.y + tab_height + Ui::Settings.GetPadding().y);
-    ImVec2 content_size(total_width, ImGui::GetContentRegionAvail().y - tab_height);
+    ImVec2 content_size(total_width, ImGui::GetContentRegionAvail().y);
 
     dl->AddRectFilled(content_pos, ImVec2(content_pos.x + content_size.x, content_pos.y + content_size.y),
-                      IM_COL32(30, 32, 40, 255), 4.0f);
+                      ImGui::GetColorU32(ImGuiCol_TableRowBgAlt), 4.0f);
 
     // Animate content alpha
     float content_alpha = iam_tween_float(id, ImHashStr("animmp_content"), 1.0f, 0.2f,
@@ -876,6 +877,7 @@ void Ui::RenderSettingsPanel()
 
     ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + content_size.y + Ui::Settings.GetPadding().y));
     ImGui::Dummy(ImVec2(0.0f, 0.0f));
+    ImGui::EndChild();
 }
 
 void Ui::AnimatedNameplatesSettings::LoadSettings()
