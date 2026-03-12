@@ -240,8 +240,6 @@ void Ui::RenderAnimatedPercentage(CursorState& cursor, const std::string& id, co
         float tx      = minX + (barW * (i / static_cast<float>(hpTicks)));
         bool  reached = tx <= (minX + fillWidth);
 
-        float a = reached ? 0.34f : 0.15f;
-
         drawList->AddLine(ImVec2(tx - 1, minY + 1), ImVec2(tx - 1, maxY - 1),
                           IM_COL32(0, 0, 0, static_cast<int>((reached ? 0.15 : 0.3) * 255)), 1.0f);
         drawList->AddLine(ImVec2(tx, minY + 1), ImVec2(tx, maxY - 1),
