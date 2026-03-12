@@ -207,6 +207,12 @@ class AnimatedNameplatesSettings
         m_configNode["HPBarStyleHaters"] = static_cast<int>(style);
         SaveSettings();
     }
+    void SetHPTicks(int ticks)
+    {
+        m_hpTicks               = ticks;
+        m_configNode["HPTicks"] = ticks;
+        SaveSettings();
+    }
 
     bool          GetShowBuffIcons() const { return m_showBuffIcons; }
     const ImVec2& GetPadding() const { return m_padding; }
@@ -232,6 +238,7 @@ class AnimatedNameplatesSettings
     HPBarStyle    GetHPBarStyleGroup() const { return m_hpBarStyleGroup; }
     HPBarStyle    GetHPBarStyleTarget() const { return m_hpBarStyleTarget; }
     HPBarStyle    GetHPBarStyleHaters() const { return m_hpBarStyleHaters; }
+    int           GetHPTicks() const { return m_hpTicks; }
 
   private:
     bool m_renderForSelf      = true;
@@ -253,6 +260,7 @@ class AnimatedNameplatesSettings
     float  m_fontSize       = 20.0f;
     float  m_iconSize       = 20.0f;
     float  m_nameplateWidth = 500.0f;
+    int    m_hpTicks        = 10;
 
     float m_nameplateHeightOffset = 35.0f;
 

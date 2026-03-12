@@ -233,15 +233,19 @@ void Ui::RenderAnimatedPercentage(CursorState& cursor, const std::string& id, co
         }
     }
 
-    for (int i = 1; i < 10; ++i)
+    int hpTicks = 100 / Ui::Settings.GetHPTicks();
+
+    for (int i = 1; i < hpTicks; ++i)
     {
-        float tx      = minX + (barW * (i / 10.0f));
+        float tx      = minX + (barW * (i / static_cast<float>(hpTicks)));
         bool  reached = tx <= (minX + fillWidth);
 
-        float a = reached ? 0.64f : 0.34f;
+        float a = reached ? 0.34f : 0.15f;
 
+        drawList->AddLine(ImVec2(tx - 1, minY + 1), ImVec2(tx - 1, maxY - 1),
+                          IM_COL32(0, 0, 0, static_cast<int>((reached ? 0.15 : 0.3) * 255)), 1.0f);
         drawList->AddLine(ImVec2(tx, minY + 1), ImVec2(tx, maxY - 1),
-                          IM_COL32(255, 255, 255, static_cast<int>(a * 255)), 1.0f);
+                          IM_COL32(255, 255, 255, static_cast<int>((reached ? 0.3 : 0.15) * 255)), 1.0f);
     }
 
     drawList->AddRect(ImVec2(minX, minY), ImVec2(maxX, maxY), colHighlight, Settings.GetBarRounding(), 0,
@@ -779,6 +783,10 @@ void Ui::RenderSettingsPanel()
              if (Ui::AnimatedSlider("Nameplate Width", &nameplateWidth, 25.0f, 800.0f, valueFormat, sliderLabelWidth))
                  Settings.SetNameplateWidth(nameplateWidth);
 
+             float hpTicks = static_cast<float>(Settings.GetHPTicks());
+             if (Ui::AnimatedSlider("HP Ticks Every [x] %", &hpTicks, 1, 25, "%.0f", sliderLabelWidth))
+                 Settings.SetHPTicks(static_cast<int>(hpTicks));
+
              float fontSize = Settings.GetFontSize();
              if (Ui::AnimatedSlider("Font Size", &fontSize, 1.0f, 40.0f, valueFormat, sliderLabelWidth))
                  Settings.SetFontSize(fontSize);
@@ -931,6 +939,7 @@ void Ui::AnimatedNameplatesSettings::LoadSettings()
             static_cast<HPBarStyle>(m_configNode["HPBarStyleTarget"].as<int>(static_cast<int>(m_hpBarStyleTarget)));
         m_hpBarStyleHaters =
             static_cast<HPBarStyle>(m_configNode["HPBarStyleHaters"].as<int>(static_cast<int>(m_hpBarStyleHaters)));
+        m_hpTicks = m_configNode["HPTicks"].as<int>(m_hpTicks);
 
         m_padding =
             ImVec2(m_configNode["PaddingX"].as<float>(m_padding.x), m_configNode["PaddingY"].as<float>(m_padding.y));
