@@ -183,10 +183,28 @@ class AnimatedNameplatesSettings
         m_configNode["NameplateHeightOffset"] = offset;
         SaveSettings();
     }
-    void SetHPBarStyle(HPBarStyle style)
+    void SetHPBarStyleSelf(HPBarStyle style)
     {
-        m_hpBarStyle               = style;
-        m_configNode["HPBarStyle"] = static_cast<int>(style);
+        m_hpBarStyleSelf               = style;
+        m_configNode["HPBarStyleSelf"] = static_cast<int>(style);
+        SaveSettings();
+    }
+    void SetHPBarStyleGroup(HPBarStyle style)
+    {
+        m_hpBarStyleGroup               = style;
+        m_configNode["HPBarStyleGroup"] = static_cast<int>(style);
+        SaveSettings();
+    }
+    void SetHPBarStyleTarget(HPBarStyle style)
+    {
+        m_hpBarStyleTarget               = style;
+        m_configNode["HPBarStyleTarget"] = static_cast<int>(style);
+        SaveSettings();
+    }
+    void SetHPBarStyleHaters(HPBarStyle style)
+    {
+        m_hpBarStyleHaters               = style;
+        m_configNode["HPBarStyleHaters"] = static_cast<int>(style);
         SaveSettings();
     }
 
@@ -210,7 +228,10 @@ class AnimatedNameplatesSettings
     bool          GetShortClassName() const { return m_shortClassName; }
     bool          GetShowLevel() const { return m_showLevel; }
     float         GetNameplateHeightOffset() const { return m_nameplateHeightOffset; }
-    HPBarStyle    GetHPBarStyle() const { return m_hpBarStyle; }
+    HPBarStyle    GetHPBarStyleSelf() const { return m_hpBarStyleSelf; }
+    HPBarStyle    GetHPBarStyleGroup() const { return m_hpBarStyleGroup; }
+    HPBarStyle    GetHPBarStyleTarget() const { return m_hpBarStyleTarget; }
+    HPBarStyle    GetHPBarStyleHaters() const { return m_hpBarStyleHaters; }
 
   private:
     bool m_renderForSelf      = true;
@@ -238,7 +259,10 @@ class AnimatedNameplatesSettings
     float m_barRounding        = 6.0f;
     float m_barBorderThickness = 2.5f;
 
-    HPBarStyle m_hpBarStyle = HPBarStyle_ColorRange;
+    HPBarStyle m_hpBarStyleSelf   = HPBarStyle_ColorRange;
+    HPBarStyle m_hpBarStyleGroup  = HPBarStyle_ColorRange;
+    HPBarStyle m_hpBarStyleTarget = HPBarStyle_ColorRange;
+    HPBarStyle m_hpBarStyleHaters = HPBarStyle_ColorRange;
 
     std::string m_configFile = "MQAnimatedNameplates.yaml";
     YAML::Node  m_configNode;
@@ -284,8 +308,10 @@ void RenderAnimatedPercentage(CursorState& cursor, const std::string& id, const 
                               const float width, ImU32 colLow, ImU32 colMid, ImU32 colHigh, ImU32 colHighlight,
                               const std::string& label = "");
 
-void RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width,
-                      ImU32 conColor, bool currentTarget, const std::string& label = "");
+void RenderFancyHPBar(
+    CursorState& cursor, const std::string& id, float hpPct, float height, float width, ImU32 conColor,
+    bool currentTarget, const std::string& label = "",
+    AnimatedNameplatesSettings::HPBarStyle style = AnimatedNameplatesSettings::HPBarStyle::HPBarStyle_ColorRange);
 
 void RenderSettingsPanel();
 bool AnimatedCheckbox(const std::string& label, bool* value);

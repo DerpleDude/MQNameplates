@@ -261,7 +261,8 @@ void Ui::RenderAnimatedPercentage(CursorState& cursor, const std::string& id, co
 }
 
 void Ui::RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPct, float height, float width,
-                          ImU32 conColor, bool currentTarget, const std::string& label)
+                          ImU32 conColor, bool currentTarget, const std::string& label,
+                          Ui::AnimatedNameplatesSettings::HPBarStyle style)
 {
     ImU32 hpLow  = IM_COL32(floor(0.8f * 255), floor(0.2f * 255), floor(0.2f * 255), 255);
     ImU32 hpMid  = IM_COL32(floor(0.9f * 255), floor(0.7f * 255), floor(0.2f * 255), 255);
@@ -269,7 +270,7 @@ void Ui::RenderFancyHPBar(CursorState& cursor, const std::string& id, float hpPc
 
     ImU32 highlightColor = conColor;
 
-    switch (Settings.GetHPBarStyle())
+    switch (style)
     {
     case AnimatedNameplatesSettings::HPBarStyle_SolidRed:
         hpLow = hpMid = hpHigh = IM_COL32(floor(0.8f * 255), floor(0.2f * 255), floor(0.2f * 255), 255);
@@ -718,10 +719,25 @@ void Ui::RenderSettingsPanel()
         {1, "Look and Feel",
          []()
          {
-             Ui::AnimatedNameplatesSettings::HPBarStyle hpBarStyle = Settings.GetHPBarStyle();
-             if (Ui::AnimatedCombo("HP Bar Style", reinterpret_cast<int*>(&hpBarStyle),
+             Ui::AnimatedNameplatesSettings::HPBarStyle hpBarStyle = Settings.GetHPBarStyleSelf();
+             if (Ui::AnimatedCombo("Self HP Bar Style", reinterpret_cast<int*>(&hpBarStyle),
                                    {"Solid Red", "Con Color", "Color Range"}))
-                 Settings.SetHPBarStyle(hpBarStyle);
+                 Settings.SetHPBarStyleSelf(hpBarStyle);
+
+             hpBarStyle = Settings.GetHPBarStyleGroup();
+             if (Ui::AnimatedCombo("Group HP Bar Style", reinterpret_cast<int*>(&hpBarStyle),
+                                   {"Solid Red", "Con Color", "Color Range"}))
+                 Settings.SetHPBarStyleGroup(hpBarStyle);
+
+             hpBarStyle = Settings.GetHPBarStyleTarget();
+             if (Ui::AnimatedCombo("Target HP Bar Style", reinterpret_cast<int*>(&hpBarStyle),
+                                   {"Solid Red", "Con Color", "Color Range"}))
+                 Settings.SetHPBarStyleTarget(hpBarStyle);
+
+             hpBarStyle = Settings.GetHPBarStyleHaters();
+             if (Ui::AnimatedCombo("Auto Haters HP Bar Style", reinterpret_cast<int*>(&hpBarStyle),
+                                   {"Solid Red", "Con Color", "Color Range"}))
+                 Settings.SetHPBarStyleHaters(hpBarStyle);
 
              ImGui::NewLine();
 
@@ -907,7 +923,14 @@ void Ui::AnimatedNameplatesSettings::LoadSettings()
         m_showClass             = m_configNode["ShowClass"].as<bool>(m_showClass);
         m_showLevel             = m_configNode["ShowLevel"].as<bool>(m_showLevel);
         m_nameplateHeightOffset = m_configNode["NameplateHeightOffset"].as<float>(m_nameplateHeightOffset);
-        m_hpBarStyle = static_cast<HPBarStyle>(m_configNode["HPBarStyle"].as<int>(static_cast<int>(m_hpBarStyle)));
+        m_hpBarStyleSelf =
+            static_cast<HPBarStyle>(m_configNode["HPBarStyleSelf"].as<int>(static_cast<int>(m_hpBarStyleSelf)));
+        m_hpBarStyleGroup =
+            static_cast<HPBarStyle>(m_configNode["HPBarStyleGroup"].as<int>(static_cast<int>(m_hpBarStyleGroup)));
+        m_hpBarStyleTarget =
+            static_cast<HPBarStyle>(m_configNode["HPBarStyleTarget"].as<int>(static_cast<int>(m_hpBarStyleTarget)));
+        m_hpBarStyleHaters =
+            static_cast<HPBarStyle>(m_configNode["HPBarStyleHaters"].as<int>(static_cast<int>(m_hpBarStyleHaters)));
 
         m_padding =
             ImVec2(m_configNode["PaddingX"].as<float>(m_padding.x), m_configNode["PaddingY"].as<float>(m_padding.y));
