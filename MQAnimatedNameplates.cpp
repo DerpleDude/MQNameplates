@@ -7,6 +7,7 @@
 
 // By: Derple derple@ntsj.com
 
+#include "Config.h"
 #include "Ui.h"
 
 #include "eqlib/graphics/CameraInterface.h"
@@ -286,6 +287,11 @@ PLUGIN_API void OnUpdateImGui()
             }
         }
     }
+}
+
+PLUGIN_API void OnPulse()
+{
+    Ui::Config::Get().SaveSettings();
 }
 
 sol::object DoCreateModule(sol::this_state s)

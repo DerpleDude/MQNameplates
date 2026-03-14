@@ -17,7 +17,7 @@ Config& Config::Get()
 
 void Config::SaveSettings()
 {
-    if (m_container.IsDirty())
+    if (m_container.IsDirty() && !m_configFile.empty())
     {
         m_container.SaveConfig(m_configFile);
     }
