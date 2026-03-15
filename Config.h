@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ConfigVariable.h"
-#include "Widgets.h"
 
 #include <string>
 
@@ -69,6 +68,7 @@ public:
     // Rendering behavior
     ConfigVariable<bool> RenderToForeground{ m_container, "RenderToForeground", false };
     ConfigVariable<bool> RenderNoLOS{ m_container, "RenderNoLOS", false };
+    ConfigVariable<float> MaxDrawDistance{ m_container, "MaxDrawDistance", 200.0f, 100.0f, 1000.0f };
 
     // Basic flags
     ConfigVariable<bool> ShowBuffIcons{ m_container, "ShowBuffIcons", true };
@@ -76,6 +76,10 @@ public:
 
     ConfigVariable<bool> DrawTestBar{ m_container, "DrawTestBar", false };
     ConfigVariable<float> BarPercent{ m_container, "BarPercent", 100.0f, 0.0f, 100.0f };
+    ConfigVariable<bool> UseBonePosition{ m_container, "UseBonePosition", true };
+    ConfigVariable<float> ScaleFactorAdjustment{ m_container, "ScaleFactorAdjustment", 1.0f, 0.001f, 10.0f };
+    ConfigVariable<float> NameplateHeightAdjust{ m_container, "NameplateHeightAdjust", 10.0f, 0.0f, 100.0f };
+    ConfigVariable<float> NameplateHeightScaleCoeff{ m_container, "NameplateHeightScaleCoeff", 0.35f, 0.01f, 5.0f };
 
     // Layout / sizes
     ConfigVariable<float> FontSize{ m_container, "FontSize", 20.0f, 1.0f, 40.0f };

@@ -888,6 +888,7 @@ public:
 
         RenderOption(config.RenderToForeground, "Render To Foreground");
         RenderOption(config.RenderNoLOS, "Render Even When Occluded");
+        RenderOption(config.MaxDrawDistance, "Maximum Draw Distance");
     }
 
     void DrawDevAndDebugTab()
@@ -900,6 +901,13 @@ public:
 
         RenderOption(config.DrawTestBar, "Draw Test Bar");
         RenderOption(config.BarPercent, "Test Bar Percent", 0, "%0.f");
+
+        ImGui::NewLine();
+
+        RenderOption(config.UseBonePosition, "Use Bones for Positioning");
+        RenderOption(config.ScaleFactorAdjustment, "Scale Factor Adjustment", 0, "%.05f");
+        RenderOption(config.NameplateHeightAdjust, "Nameplate Height Adjustment");
+        RenderOption(config.NameplateHeightScaleCoeff, "Nameplate Scale Coefficient");
     }
 
     std::vector<Ui::AnimatedTabState> tabs;
