@@ -157,7 +157,7 @@ static float GetActorScaleFactor(CActorInterface* pActor)
     return scaleFactor;
 }
 
-static bool GetNameplatePositionFromBones(PlayerClient* pSpawn, ImVec2& outCoords)
+static bool GetNameplatePositionFromBones(PlayerClient* pSpawn, ImVec2& outCoords, float& outNameplateScale)
 {
     CCamera* camera = static_cast<eqlib::CCamera*>(pDisplay->pCamera);
     if (!camera)
@@ -190,6 +190,7 @@ static bool GetNameplatePositionFromBones(PlayerClient* pSpawn, ImVec2& outCoord
     float distance = glm::distance(glm::vec2(bonePos), glm::vec2(camera->position));
     float distanceScale = 1.0f + std::min(1.0f, (distance / (150.0f * scaleFactor)));
     float nameplateScaleCoeff = config.NameplateHeightScaleCoeff;
+    outNameplateScale = scaleFactor * distanceScale * nameplateScaleCoeff;
 
     // FIXME: Use actual height of nameplate instead of config
     float scaledHeight = camera->cotAspectRatio * (additionalYOffset + config.NameplateHeightAdjust * scaleFactor * distanceScale * nameplateScaleCoeff);
@@ -224,22 +225,16 @@ static void DrawNameplates(PlayerClient* pSpawn, Ui::HPBarStyle style, bool alwa
     Ui::Nameplate& nameplate = it->second;
     Ui::Config& config = Ui::Config::Get();
 
+    float nameplateScale = 1.0f;
     ImVec2 targetNameplatePos;
-    if (config.UseBonePosition)
-    {
-        if (!GetNameplatePositionFromBones(pSpawn, targetNameplatePos))
-            return;
-    }
-    else
-    {
-        if (!GetNameplatePositionFromSpawnPosition(pSpawn, targetNameplatePos))
-            return;
-    }
-    
+
+    if (!GetNameplatePositionFromBones(pSpawn, targetNameplatePos, nameplateScale))
+        return;
+
     const ImVec2 canvasSize(config.NameplateWidth, 50);
     float pctHP = pSpawn->HPMax == 0 ? 0 : pSpawn->HPCurrent * 100.0f / pSpawn->HPMax;
 
-    nameplate.Render(targetNameplatePos, canvasSize, pctHP, style, pTarget == pSpawn);
+    nameplate.Render(targetNameplatePos, canvasSize, nameplateScale, pctHP, style, pTarget == pSpawn);
 }
 
 PLUGIN_API void InitializePlugin()

@@ -159,7 +159,6 @@ public:
 
         ImGui::NewLine();
 
-        RenderOption(config.UseBonePosition, "Use Bones for Positioning");
         RenderOption(config.ScaleFactorAdjustment, "Scale Factor Adjustment", 0, "%.05f");
         RenderOption(config.NameplateHeightAdjust, "Nameplate Height Adjustment");
         RenderOption(config.NameplateHeightScaleCoeff, "Nameplate Scale Coefficient");

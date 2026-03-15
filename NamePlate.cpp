@@ -33,19 +33,22 @@ ImDrawList* Nameplate::GetDrawList()
     return Ui::Config::Get().RenderToForeground ? ImGui::GetForegroundDrawList() : ImGui::GetBackgroundDrawList();
 }
 
-void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float percent,
+void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale, float percent,
     Ui::HPBarStyle style, bool currentTarget)
 {
     // track the last render and clean up after 30s of non-usage.
     m_lastRenderTime = std::chrono::steady_clock::now();
 
     Ui::Config& config = Ui::Config::Get();
+    float finalScale = (1.0f/scale) * config.ScaleFactor;
 
     float dt = ImGui::GetIO().DeltaTime;
 
-    ImVec2 scaledFameSize = frameSize * ImVec2(config.ScaleFactor, config.ScaleFactor);
+    float distance = GetDistance(m_pSpawn->X, m_pSpawn->Y);
 
-    ImGui::PushFont(nullptr, config.FontSize *config.ScaleFactor);
+    ImVec2 scaledFameSize = frameSize * ImVec2(finalScale, finalScale);
+
+    ImGui::PushFont(nullptr, config.FontSize * finalScale);
 
     ImDrawList* drawList = Nameplate::GetDrawList();
 
@@ -253,8 +256,14 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float percen
     }
 
     ImGui::PopFont();
+    
     // Render Debug Overlay
-    RenderDebugNameplateRect(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f);
+    if (config.ShowDebugPanel)
+    {
+        ImU32 pink = IM_COL32(240, 80, 240, 255);
+        drawList->AddText(botRight, pink, fmt::format("Scale: {:.5f} FinalScale: {:.5f}", 1.0f/scale, finalScale).c_str());
+        RenderDebugNameplateRect(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f);
+    }
 }
 
 void Nameplate::RenderNameplateText(const ImVec2& left_pos, ImU32 color, const char* text)

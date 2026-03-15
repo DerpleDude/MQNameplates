@@ -32,7 +32,7 @@ public:
 
     ImDrawList* GetDrawList();
 
-    void Render(ImVec2& center_pos, const ImVec2& frameSize, float percent, Ui::HPBarStyle style,
+    void Render(ImVec2& center_pos, const ImVec2& frameSize, float scale, float percent, Ui::HPBarStyle style,
         bool currentTarget);
 
     void RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVec2& barSize, ImU32 colLow,

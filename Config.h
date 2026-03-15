@@ -69,6 +69,7 @@ public:
     ConfigVariable<bool> RenderToForeground{ m_container, "RenderToForeground", false };
     ConfigVariable<bool> RenderNoLOS{ m_container, "RenderNoLOS", false };
     ConfigVariable<float> MaxDrawDistance{ m_container, "MaxDrawDistance", 200.0f, 100.0f, 1000.0f };
+    ConfigVariable<bool> ScaleWithDistance{ m_container, "ScaleWithDistance", true };
 
     // Basic flags
     ConfigVariable<bool> ShowBuffIcons{ m_container, "ShowBuffIcons", true };
@@ -76,7 +77,6 @@ public:
 
     ConfigVariable<bool> DrawTestBar{ m_container, "DrawTestBar", false };
     ConfigVariable<float> BarPercent{ m_container, "BarPercent", 100.0f, 0.0f, 100.0f };
-    ConfigVariable<bool> UseBonePosition{ m_container, "UseBonePosition", true };
     ConfigVariable<float> ScaleFactorAdjustment{ m_container, "ScaleFactorAdjustment", 1.0f, 0.001f, 10.0f };
     ConfigVariable<float> NameplateHeightAdjust{ m_container, "NameplateHeightAdjust", 5.0f, 0.0f, 25.0f };
     ConfigVariable<float> NameplateHeightScaleCoeff{ m_container, "NameplateHeightScaleCoeff", 0.3125f, 0.01f, 1.0f };
