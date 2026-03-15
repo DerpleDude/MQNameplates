@@ -87,6 +87,7 @@ public:
     ConfigVariable<float> NameplateWidth{ m_container, "NameplateWidth", 500.0f, 25.0f, 1500.0f };
     ConfigVariable<int> HPTicks{ m_container, "HPTicks", 10, 1, 25 };
     ConfigVariable<float> NameplateHeightOffset{ m_container, "NameplateHeightOffset", 35.0f, -200.0f, 400.0f };
+    ConfigVariable<float> ScaleFactor{ m_container, "ScaleFactor", 1.0f, 0.1f, 10.0f };
 
     // Bar appearance
     ConfigVariable<float> BarRounding{ m_container, "BarRounding", 6.0f, 0.0f, 10.0f };

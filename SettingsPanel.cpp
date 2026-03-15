@@ -163,6 +163,9 @@ public:
         RenderOption(config.ScaleFactorAdjustment, "Scale Factor Adjustment", 0, "%.05f");
         RenderOption(config.NameplateHeightAdjust, "Nameplate Height Adjustment");
         RenderOption(config.NameplateHeightScaleCoeff, "Nameplate Scale Coefficient");
+
+        ImGui::NewLine();
+        RenderOption(config.ScaleFactor, "Overall Scale Factor", 0, "%.2f");
     }
 
     std::vector<Ui::AnimatedTabState> tabs;

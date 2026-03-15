@@ -43,26 +43,26 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float percen
 
     float dt = ImGui::GetIO().DeltaTime;
 
-    ImGui::PushFont(nullptr, config.FontSize);
+    ImVec2 scaledFameSize = frameSize * ImVec2(config.ScaleFactor, config.ScaleFactor);
+
+    ImGui::PushFont(nullptr, config.FontSize *config.ScaleFactor);
 
     ImDrawList* drawList = Nameplate::GetDrawList();
 
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
     const ImVec2 barSize{
-        frameSize.x - padding.x * 2,
-        ImGui::GetTextLineHeight() // Should this acutally be frameSize.y?
+        scaledFameSize.x - padding.x * 2,
+        ImGui::GetTextLineHeight() // Should this acutally be scaledFameSize.y?
     };
 
     if (m_renderCount++ % 2 == 0)
     {
         m_lastPosition = center_pos;
     }
-    else
-    {
-        center_pos = m_lastPosition;
-    }
 
-    ImVec2 framePos = center_pos - (frameSize / 2.0f);
+    center_pos = m_lastPosition;
+
+    ImVec2 framePos = center_pos - (scaledFameSize / 2.0f);
     ImVec2 barPos   = center_pos - (barSize / 2.0f);
     ImVec2 topLeft  = framePos;
     ImVec2 botRight = center_pos + (barSize / 2.0f);
@@ -119,7 +119,7 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float percen
 
     if (m_pTextureFrame && m_pTextureFrame->IsValid())
     {
-        drawList->AddImage(m_pTextureFrame->GetTextureID(), framePos, framePos + frameSize);
+        drawList->AddImage(m_pTextureFrame->GetTextureID(), framePos, framePos + scaledFameSize);
     }
 
     ImVec2 textLinePos = center_pos - ImVec2(0, barSize.y / 2.0f + ImGui::GetTextLineHeightWithSpacing() + padding.y);
@@ -211,7 +211,7 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float percen
     // only render for target.
     if (config.ShowBuffIcons && pTarget == m_pSpawn)
     {
-        int buffsPerRow = std::max(1, static_cast<int>(floorf(frameSize.x / (config.IconSize + padding.x))));
+        int buffsPerRow = std::max(1, static_cast<int>(floorf(scaledFameSize.x / (config.IconSize + padding.x))));
 
         int buffCount = config.ShowBuffIcons ? GetCachedBuffCount(m_pSpawn) : 0;
 

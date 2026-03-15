@@ -277,8 +277,11 @@ PLUGIN_API void OnUpdateImGui()
 
         Ui::Config& config = Ui::Config::Get();
 
-        if (config.RenderForSelf)
-            DrawNameplates(pLocalPlayer, config.HPBarStyleSelf.get());
+        if (config.RenderForSelf) 
+        {
+            if (!config.RenderForTarget || !pTarget || pLocalPlayer->SpawnID != pTarget->SpawnID)
+                DrawNameplates(pLocalPlayer, config.HPBarStyleSelf.get());
+        }
         if (config.RenderForGroup && pLocalPC->pGroupInfo)
         {
             for (int i = 0; i < MAX_GROUP_SIZE; i++)
