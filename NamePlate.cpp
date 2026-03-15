@@ -2,7 +2,6 @@
 #include "Config.h"
 
 #include "eqlib/EQLib.h"
-
 #include "imgui/imgui_internal.h"
 #include "imgui/imanim/im_anim.h"
 #include "mq/imgui/Widgets.h"
@@ -10,36 +9,47 @@
 
 namespace Ui {
 
-Nameplate::Nameplate(const std::string& id, const std::string& textureFrame, const std::string& textureBar, eqlib::PlayerClient* pSpawn, ImU32 conColor)
+Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn, mq::MQColor conColor)
     : m_id(id)
     , m_conColor(conColor)
     , m_pSpawn(pSpawn)
 {
-    m_pTextureFrame = CreateTexturePtr(textureFrame);
-    m_pTextureBar   = CreateTexturePtr(textureBar);
+}
+
+Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn, mq::MQColor conColor,
+    const std::string& textureFrame, const std::string& textureBar)
+    : m_id(id)
+    , m_conColor(conColor)
+    , m_pSpawn(pSpawn)
+{
+    m_pTextureFrame = mq::CreateTexturePtr(textureFrame);
+    m_pTextureBar = mq::CreateTexturePtr(textureBar);
 }
 
 ImDrawList* Nameplate::GetDrawList()
 {
     return Ui::Config::Get().RenderToForeground ? ImGui::GetForegroundDrawList() : ImGui::GetBackgroundDrawList();
 }
+
 void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float percent,
-                       Ui::HPBarStyle style, bool currentTarget)
+    Ui::HPBarStyle style, bool currentTarget)
 {
     // track the last render and clean up after 30s of non-usage.
-    m_lastRenderTime = time(nullptr);
+    m_lastRenderTime = std::chrono::steady_clock::now();
 
     Ui::Config& config = Ui::Config::Get();
 
     float dt = ImGui::GetIO().DeltaTime;
 
     ImGui::PushFont(nullptr, config.FontSize);
+
     ImDrawList* drawList = Nameplate::GetDrawList();
-    
+
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
-    const ImVec2 barSize{frameSize.x - padding.x * 2,
-                           // Should this acutally be frameSize.y?
-                         ImGui::GetTextLineHeight()};
+    const ImVec2 barSize{
+        frameSize.x - padding.x * 2,
+        ImGui::GetTextLineHeight() // Should this acutally be frameSize.y?
+    };
 
     ImVec2 framePos = center_pos - (frameSize / 2.0f);
     ImVec2 barPos   = center_pos - (barSize / 2.0f);
@@ -55,14 +65,14 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     else
     {
         // calculate which way hps are going from the last time we rendered.
-        if (m_targetPercent < (m_smoothPercent))
+        if (m_targetPercent < m_smoothPercent)
             m_trendDirection = -1;
-        else if (m_targetPercent >= (m_smoothPercent))
+        else if (m_targetPercent >= m_smoothPercent)
             m_trendDirection = 1;
     }
 
     m_smoothPercent = iam_tween_float(ImHashStr(m_id.c_str()), ImHashStr("pctTween"), percent, 0.5f,
-                                    iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt) / 100.0f;
+        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt) / 100.0f;
 
     if (m_pTextureBar && m_pTextureBar->IsValid())
     {
@@ -76,19 +86,20 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
         ImU32 hpMid  = IM_COL32(floor(0.9f * 255), floor(0.7f * 255), floor(0.2f * 255), 255);
         ImU32 hpHigh = IM_COL32(floor(0.2f * 255), floor(0.9f * 255), floor(0.2f * 255), 255);
 
-        ImU32 highlightColor = m_conColor;
+        ImU32 highlightColor;
 
         switch (style)
         {
         case HPBarStyle_SolidRed:
             hpLow = hpMid = hpHigh = IM_COL32(floor(0.8f * 255), floor(0.2f * 255), floor(0.2f * 255), 255);
-            highlightColor         = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
             break;
         case HPBarStyle_ConColor:
-            hpLow = hpMid = hpHigh = m_conColor;
-            highlightColor         = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+            hpLow = hpMid = hpHigh = m_conColor.ToImU32();
+            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
             break;
         case HPBarStyle_ColorRange:
+            highlightColor = m_conColor.ToImU32();
             break;
         }
 
@@ -104,7 +115,8 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
 
     // if we will render guild/purpose text, move the text up a line to make room.
-    if ((config.ShowGuild && pGuild && m_pSpawn->GuildID > 0) || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0]))
+    if ((config.ShowGuild && eqlib::pGuild && m_pSpawn->GuildID > 0)
+        || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0]))
     {
         //
         // Detail
@@ -244,10 +256,13 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
                                             bool currentTarget /* = false */)
 {
     ImDrawList* drawList = Nameplate::GetDrawList();
-    float       dt = static_cast<float>(ImGui::GetTime());
+    Ui::Config& config = Ui::Config::Get();
+
+    // FIXME: This should be accumulated time, not absolute time
+    float dt = static_cast<float>(ImGui::GetTime());
 
     ImVec2 min = center_pos - (barSize / 2.0f);
-    ImVec2 max  = center_pos + (barSize / 2.0f);
+    ImVec2 max = center_pos + (barSize / 2.0f);
 
     float barW = barSize.x;
     float barH = barSize.y;
@@ -263,11 +278,10 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     ImU32 bgTop    = IM_COL32(28, 30, 41, 247);
     ImU32 bgBottom = IM_COL32(10, 13, 20, 247);
 
-    AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop,
-                                   bgBottom, bgBottom, Config::Get().BarRounding, 0);
+    AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, config.BarRounding, 0);
 
     drawList->AddRectFilled(innerMin, ImVec2(max.x - 1, min.y + std::max(2.0f, barH * 0.35f)),
-                            IM_COL32(255, 255, 255, 14), Config::Get().BarRounding);
+        IM_COL32(255, 255, 255, 14), config.BarRounding);
 
     if (fillWidth > 0)
     {
@@ -291,27 +305,27 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
             }
         }
 
-        ImU32 topLeft     = colLow;
-        ImU32 topRight    = edge;
-        ImU32 bottomLeft  = topLeft;
+        ImU32 topLeft = colLow;
+        ImU32 topRight = edge;
+        ImU32 bottomLeft = topLeft;
         ImU32 bottomRight = topRight;
 
-        float fillRounding = std::min({Config::Get().BarRounding.get(), barH * 0.5f, fillWidth * 0.5f});
+        float fillRounding = std::min({ config.BarRounding.get(), barH * 0.5f, fillWidth * 0.5f });
 
         drawList->AddRectFilled(min, fillMax, colLow, fillRounding);
-        
+
         if (fillMax.x > innerMin.x && fillMax.y > innerMin.y)
         {
-            AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, Config::Get().BarRounding, 0);
+            AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
 
             float glossMaxY = std::min(innerFillMax.y, min.y + std::max(2.0f, barH * 0.45f));
 
             if (glossMaxY > innerMin.y)
             {
-              AddRectFilledMultiColorRounded(innerMin, ImVec2(innerFillMax.x, glossMaxY),
-                                               IM_COL32(255, 255, 255, 14), IM_COL32(255, 255, 255, 8),
-                                               IM_COL32(255, 255, 255, 2), IM_COL32(255, 255, 255, 8),
-                                               Config::Get().BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, ImVec2(innerFillMax.x, glossMaxY),
+                    IM_COL32(255, 255, 255, 14), IM_COL32(255, 255, 255, 8),
+                    IM_COL32(255, 255, 255, 2), IM_COL32(255, 255, 255, 8),
+                    config.BarRounding, 0);
             }
         }
 
@@ -320,14 +334,14 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
             bool isAnimating = fabs(m_smoothPercent - m_targetPercent) > 0.5f;
 
             float sweepSpeed = isAnimating ? 1.2f : 0.65f;
-            float sweepBase  = fmodf(dt * sweepSpeed, 1.0f);
+            float sweepBase = fmodf(dt * sweepSpeed, 1.0f);
 
             float sweep = (isAnimating || m_trendDirection < 0) ? (1.0f - sweepBase) : sweepBase;
 
             float sheenCenter = min.x + (fillWidth * sweep);
-            float sheenHalf   = std::min(16.0f, fillWidth * 0.22f);
+            float sheenHalf = std::min(16.0f, fillWidth * 0.22f);
 
-            float sheenLeft  = std::max(min.x + 1, sheenCenter - sheenHalf);
+            float sheenLeft = std::max(min.x + 1, sheenCenter - sheenHalf);
             float sheenRight = std::min(fillMaxX - 1, sheenCenter + sheenHalf);
 
             if (sheenRight > sheenLeft)
@@ -337,16 +351,16 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
                 float sheenAlpha = isAnimating ? 0.25f : 0.18f;
 
                 AddRectFilledMultiColorRounded(ImVec2(sheenLeft, min.y), ImVec2(sheenMid, max.y),
-                                               IM_COL32(255, 255, 255, 0),
-                                               IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
-                                               IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
-                                               IM_COL32(255, 255, 255, 0), Config::Get().BarRounding, 0);
+                    IM_COL32(255, 255, 255, 0),
+                    IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
+                    IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
+                    IM_COL32(255, 255, 255, 0), config.BarRounding, 0);
 
                 AddRectFilledMultiColorRounded(ImVec2(sheenMid, min.y), ImVec2(sheenRight, max.y),
-                                               IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
-                                               IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0),
-                                               IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
-                                               Config::Get().BarRounding, 0);
+                    IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
+                    IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0),
+                    IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
+                    config.BarRounding, 0);
             }
         }
     }
@@ -355,13 +369,13 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
 
     for (int i = 1; i < hpTicks; ++i)
     {
-        float tx      = min.x + (barW * (i / static_cast<float>(hpTicks)));
+        float tx = min.x + (barW * (i / static_cast<float>(hpTicks)));
         bool  reached = tx <= (min.x + fillWidth);
 
         drawList->AddLine(ImVec2(tx - 1, min.y + 1), ImVec2(tx - 1, max.y - 1),
-                          IM_COL32(0, 0, 0, static_cast<int>((reached ? 0.15 : 0.3) * 255)), 1.0f);
+            IM_COL32(0, 0, 0, static_cast<int>((reached ? 0.15 : 0.3) * 255)), 1.0f);
         drawList->AddLine(ImVec2(tx, min.y + 1), ImVec2(tx, max.y - 1),
-                          IM_COL32(255, 255, 255, static_cast<int>((reached ? 0.3 : 0.15) * 255)), 1.0f);
+            IM_COL32(255, 255, 255, static_cast<int>((reached ? 0.3 : 0.15) * 255)), 1.0f);
     }
 
     // draw some wings or something if this is our target.
@@ -395,7 +409,7 @@ void Nameplate::RenderDebugNameplateRect(const ImVec2& min, const ImVec2& max, I
 
 void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell)
 {
-    ImVec2        size(Config::Get().IconSize, Config::Get().IconSize);
+    ImVec2 size(Config::Get().IconSize, Config::Get().IconSize);
     ImVec2 max(pos + size);
 
     ImDrawList* drawList = Nameplate::GetDrawList();
@@ -418,15 +432,15 @@ ImVec2 Nameplate::m_getTextPosition(TextPositioning location, const ImVec2& cent
 
     switch (location)
     {
-        case TextPositioning::TopLeft:
-            ret.x = (center_pos.x - lineWidth / 2.0f);
-            break;
-        case TextPositioning::TopCenter:
-            ret.x = (center_pos.x) - (textWidthOut / 2.0f);
-            break;
-        case TextPositioning::TopRight:
-            ret.x = (center_pos.x + lineWidth / 2.0f) - textWidthOut;
-            break;
+    case TextPositioning::TopLeft:
+        ret.x = (center_pos.x - lineWidth / 2.0f);
+        break;
+    case TextPositioning::TopCenter:
+        ret.x = (center_pos.x) - (textWidthOut / 2.0f);
+        break;
+    case TextPositioning::TopRight:
+        ret.x = (center_pos.x + lineWidth / 2.0f) - textWidthOut;
+        break;
     }
 
     return ret;

@@ -1,19 +1,17 @@
-#include "ConfigVariable.h"
 #include "Widgets.h"
-
-#include "mq/imgui/Widgets.h"
-
+#include "ConfigVariable.h"
 #include "Config.h"
+
+#include "fmt/format.h"
 #include "imgui/ImGuiUtils.h"
 #include "imgui/imanim/im_anim.h"
-#include "fmt/format.h"
 
-namespace Ui
-{
+namespace Ui {
+
 std::unordered_map<ImGuiID, AnimatedCheckmark> checkBoxAnims;
-std::unordered_map<ImU32, Ui::AnimatedComboState> comboAnimTimes;
+std::unordered_map<ImU32, AnimatedComboState> comboAnimTimes;
 
-void Ui::AnimatedCheckmark::Reset(bool newVal)
+void AnimatedCheckmark::Reset(bool newVal)
 {
     m_path1Time = 0.0f;
     m_path2Time = 0.0f;
@@ -35,7 +33,7 @@ void Ui::AnimatedCheckmark::Reset(bool newVal)
     }
 }
 
-void Ui::AnimatedCheckmark::Render(ImDrawList* dl, const ImRect& check_bb, float box_size)
+void AnimatedCheckmark::Render(ImDrawList* dl, const ImRect& check_bb, float box_size)
 {
     float dt = ImGui::GetIO().DeltaTime;
 
@@ -118,7 +116,7 @@ void Ui::AnimatedCheckmark::Render(ImDrawList* dl, const ImRect& check_bb, float
     }
 }
 
-bool Ui::AnimatedCheckbox(const std::string& label, bool* value)
+bool AnimatedCheckbox(const std::string& label, bool* value)
 {
     ImU32 animId = ImHashStr(label.c_str());
 
@@ -161,7 +159,7 @@ bool Ui::AnimatedCheckbox(const std::string& label, bool* value)
     }
 
     // Box background
-    ImU32       box_bg = ImGui::GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive
+    ImU32 box_bg = ImGui::GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive
         : hovered ? ImGuiCol_FrameBgHovered
         : ImGuiCol_FrameBg);
     const float border_size = style.FrameBorderSize;
@@ -295,19 +293,19 @@ bool AnimatedSliderImpl(const char* label, T * slider_value, T slider_min, T sli
     return changed;
 }
 
-bool Ui::AnimatedSlider(const char* label, float* slider_value, float slider_min, float slider_max,
+bool AnimatedSlider(const char* label, float* slider_value, float slider_min, float slider_max,
     const char* format, float width)
 {
     return AnimatedSliderImpl(label, slider_value, slider_min, slider_max, format, width);
 }
 
-bool Ui::AnimatedSlider(const char* label, int* slider_value, int slider_min, int slider_max,
+bool AnimatedSlider(const char* label, int* slider_value, int slider_min, int slider_max,
     const char* format, float width)
 {
     return AnimatedSliderImpl(label, slider_value, slider_min, slider_max, format, width);
 }
 
-bool Ui::AnimatedSlider(const char* label, unsigned int* slider_value, unsigned int slider_min, unsigned int slider_max,
+bool AnimatedSlider(const char* label, unsigned int* slider_value, unsigned int slider_min, unsigned int slider_max,
     const char* format, float width)
 {
     return AnimatedSliderImpl(label, slider_value, slider_min, slider_max, format, width);
@@ -430,7 +428,7 @@ bool AnimatedComboImpl(const char* label, T* value, int item_count,
     return changed;
 }
 
-bool Ui::AnimatedCombo(const char* label, int* value, const std::vector<std::string>& items)
+bool AnimatedCombo(const char* label, int* value, const std::vector<std::string>& items)
 {
     return AnimatedComboImpl<int>(label, value, static_cast<int>(items.size()),
         [](int index) { return index; }, [&items](int index) { return items[index].c_str(); });
@@ -439,7 +437,7 @@ bool Ui::AnimatedCombo(const char* label, int* value, const std::vector<std::str
 template <typename T> requires std::is_enum_v<T>
 bool AnimatedEnumCombo(const char* label, T* value)
 {
-    static const std::vector<std::pair<T, std::string>>& valuesMapping = Ui::config_enum_traits<T>::values();
+    static const std::vector<std::pair<T, std::string>>& valuesMapping = config_enum_traits<T>::values();
 
     return AnimatedComboImpl<T>(label, value, static_cast<int>(valuesMapping.size()),
         [](int index) { return valuesMapping[index].first; },

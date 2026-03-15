@@ -22,14 +22,18 @@
 #include "imgui_internal.h"
 #include "sol/sol.hpp"
 
-#include <map>
+#include <unordered_map>
 
 PreSetup("MQAnimatedNameplates");
 PLUGIN_VERSION(0.1);
 
 iam_context* context = nullptr;
 
-std::map<unsigned int, Ui::Nameplate> nameplatesBySpawnId;
+static std::unordered_map<uint32_t, Ui::Nameplate> s_nameplatesBySpawnId;
+static std::chrono::steady_clock::time_point s_lastExpirationCheck{};
+
+static constexpr std::chrono::seconds expiration_time{ 30 };
+static constexpr std::chrono::seconds expiration_check_time{ 1 };
 
 static bool GetPositionFromHeadBone(PlayerClient* pSpawn, glm::vec3& outPosition)
 {
@@ -204,17 +208,17 @@ static bool GetNameplatePositionFromBones(PlayerClient* pSpawn, ImVec2& outCoord
 
 static void DrawNameplates(PlayerClient* pSpawn, Ui::HPBarStyle style, bool alwaysVisible = false)
 {
-    if (!pSpawn)
+    if (!pSpawn || !pDisplay)
         return;
 
     if (!alwaysVisible && !CanSeeNameplate(pSpawn))
         return;
 
     std::string hpBarID  = fmt::format("TargetHPBar_{}", pSpawn->SpawnID);
-    ImU32       conColor = GetColorForChatColor(ConColor(pSpawn)).ToImU32();
+    mq::MQColor conColor = GetColorForChatColor(ConColor(pSpawn));
 
     auto [it, inserted] =
-        nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, Ui::Nameplate{hpBarID, "", "", pSpawn, conColor});
+        s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn, conColor);
 
     Ui::Nameplate& nameplate = it->second;
     Ui::Config& config = Ui::Config::Get();
@@ -253,19 +257,22 @@ PLUGIN_API void OnUpdateImGui()
 {
     iam_context_set_current(context);
 
-    // cleanup stale nameplates
-    for (auto it = nameplatesBySpawnId.begin(); it != nameplatesBySpawnId.end();)
-    {
-        if (time(nullptr) - it->second.GetLastRenderTime() > 30)
-            it = nameplatesBySpawnId.erase(it);
-        else
-            ++it;
-    }
-
     if (GetGameState() == GAMESTATE_INGAME)
     {
-        if (!pDisplay)
-            return;
+        auto now = std::chrono::steady_clock::now();
+        if (now - s_lastExpirationCheck > expiration_check_time)
+        {
+            s_lastExpirationCheck = now;
+
+            // cleanup stale nameplates
+            for (auto it = s_nameplatesBySpawnId.begin(); it != s_nameplatesBySpawnId.end();)
+            {
+                if (now - it->second.GetLastRenderTime() > expiration_time)
+                    it = s_nameplatesBySpawnId.erase(it);
+                else
+                    ++it;
+            }
+        }
 
         Ui::Config& config = Ui::Config::Get();
 
@@ -329,6 +336,10 @@ PLUGIN_API void OnUpdateImGui()
             DrawNameplates(pTarget, config.HPBarStyleTarget.get(), true);
         }
     }
+    else if (!s_nameplatesBySpawnId.empty())
+    {
+        s_nameplatesBySpawnId.clear();
+    }
 }
 
 PLUGIN_API void OnPulse()
@@ -342,32 +353,4 @@ PLUGIN_API void OnAddSpawn(PlayerClient* pSpawn)
 
 PLUGIN_API void OnRemoveSpawn(PlayerClient* pSpawn)
 {
-}
-
-sol::object DoCreateModule(sol::this_state s)
-{
-    sol::state_view L(s);
-
-    sol::table module = L.create_table();
-
-    module["ProjectWorldCoordinatesToScreen"] =
-        [](sol::this_state L, const float x, const float y, const float z) -> ImVec2
-    {
-        if (!pDisplay || !pDisplay->pCamera)
-            return ImVec2(0, 0);
-
-        float outX, outY;
-
-        pDisplay->pCamera->ProjectWorldCoordinatesToScreen(CVector3(y, x, z), outX, outY);
-
-        return ImVec2(outX, outY);
-    };
-
-    return sol::make_object(L, module);
-}
-
-PLUGIN_API bool CreateLuaModule(sol::this_state s, sol::object& object)
-{
-    object = DoCreateModule(s);
-    return true;
 }

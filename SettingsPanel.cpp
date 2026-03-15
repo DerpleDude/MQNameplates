@@ -1,13 +1,11 @@
 #include "SettingsPanel.h"
 #include "Config.h"
 #include "Widgets.h"
-
 #include "Nameplate.h"
 
 #include "imgui/ImGuiUtils.h"
 #include "imgui/imgui_internal.h"
 #include "imgui/imanim/im_anim.h"
-
 #include "mq/Plugin.h"
 
 #include <algorithm>
@@ -191,8 +189,8 @@ void Ui::RenderSettingsPanel()
 
     // Draw tab background
     dl->AddRectFilled(tabs_pos, ImVec2(tabs_pos.x + total_width, tabs_pos.y + tab_height),
-                      ImGui::GetColorU32(ImGuiCol_TableHeaderBg), //(35, 38, 48, 255),
-                      2.0f, ImDrawFlags_RoundCornersTop);
+        ImGui::GetColorU32(ImGuiCol_TableHeaderBg), //(35, 38, 48, 255),
+        2.0f, ImDrawFlags_RoundCornersTop);
 
     // Calculate target indicator position
     float target_x = tabs_pos.x;
@@ -203,9 +201,9 @@ void Ui::RenderSettingsPanel()
     // Animate indicator with spring
     ImGuiID id = ImGui::GetID("animnp_tab_indicator");
     float indicator_x = iam_tween_float(id, ImHashStr("x"), target_x, 0.3f,
-                                              iam_ease_spring_desc(1.0f, 180.0f, 18.0f, 0.0f), iam_policy_crossfade, dt);
+        iam_ease_spring_desc(1.0f, 180.0f, 18.0f, 0.0f), iam_policy_crossfade, dt);
     float indicator_width = iam_tween_float(id, ImHashStr("w"), target_width, 0.25f,
-                                              iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
+        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
     // Draw tabs
     float x = tabs_pos.x;
@@ -226,7 +224,7 @@ void Ui::RenderSettingsPanel()
         ImGuiID tab_id = ImGui::GetID(tab.name.c_str());
         float target_alpha = (tab.idx == active_tab) ? 1.0f : (hovered ? 0.8f : 0.5f);
         float text_alpha = iam_tween_float(tab_id, ImHashStr("animnp_alpha"), target_alpha, 0.15f,
-                                               iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
+            iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
         // Draw text
         ImVec2 text_size = ImGui::CalcTextSize(tab.name.c_str());
@@ -239,9 +237,9 @@ void Ui::RenderSettingsPanel()
     // Draw animated indicator
     float indicator_y = tabs_pos.y + tab_height - 3.0f;
     dl->AddRectFilled(ImVec2(indicator_x + 8.0f, indicator_y),
-                      ImVec2(indicator_x + indicator_width - 8.0f, indicator_y + 3.0f),
-                      ImGui::GetColorU32(ImGuiCol_TabSelected), // IM_COL32(91, 194, 231, 255),
-                      4.0f);
+        ImVec2(indicator_x + indicator_width - 8.0f, indicator_y + 3.0f),
+        ImGui::GetColorU32(ImGuiCol_TabSelected), // IM_COL32(91, 194, 231, 255),
+        4.0f);
 
     ImVec2 padding = ImGui::GetStyle().FramePadding;
 
@@ -250,11 +248,11 @@ void Ui::RenderSettingsPanel()
     ImVec2 content_size(total_width, ImGui::GetContentRegionAvail().y);
 
     dl->AddRectFilled(content_pos, ImVec2(content_pos.x + content_size.x, content_pos.y + content_size.y),
-                      ImGui::GetColorU32(ImGuiCol_TableRowBgAlt), 4.0f);
+        ImGui::GetColorU32(ImGuiCol_TableRowBgAlt), 4.0f);
 
     // Animate content alpha
     float content_alpha = iam_tween_float(id, ImHashStr("animmp_content"), 1.0f, 0.2f,
-                                          iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
+        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
     ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + padding.y * 2.0f));
     ImGui::Indent(padding.x);
