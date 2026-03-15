@@ -48,6 +48,8 @@ void ConfigContainer::SaveConfig(const std::string& fileName)
     {
         SPDLOG_ERROR("Failed to write settings file: {}", fileName);
     }
+
+    m_dirty = false;
 }
 
 void ConfigContainer::LoadConfig(const std::string& fileName)
