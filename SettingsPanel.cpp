@@ -223,8 +223,6 @@ void Ui::RenderSettingsPanel()
         // Text color animation
         ImGuiID tab_id = ImGui::GetID(tab.name.c_str());
         float target_alpha = (tab.idx == active_tab) ? 1.0f : (hovered ? 0.8f : 0.5f);
-        float text_alpha = iam_tween_float(tab_id, ImHashStr("animnp_alpha"), target_alpha, 0.15f,
-            iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
         // Draw text
         ImVec2 text_size = ImGui::CalcTextSize(tab.name.c_str());
@@ -249,10 +247,6 @@ void Ui::RenderSettingsPanel()
 
     dl->AddRectFilled(content_pos, ImVec2(content_pos.x + content_size.x, content_pos.y + content_size.y),
         ImGui::GetColorU32(ImGuiCol_TableRowBgAlt), 4.0f);
-
-    // Animate content alpha
-    float content_alpha = iam_tween_float(id, ImHashStr("animmp_content"), 1.0f, 0.2f,
-        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt);
 
     ImGui::SetCursorScreenPos(ImVec2(tabs_pos.x, content_pos.y + padding.y * 2.0f));
     ImGui::Indent(padding.x);

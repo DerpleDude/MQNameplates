@@ -72,7 +72,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     }
 
     m_smoothPercent = iam_tween_float(ImHashStr(m_id.c_str()), ImHashStr("pctTween"), percent, 0.5f,
-        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt) / 100.0f;
+        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt, percent) / 100.0f;
 
     if (m_pTextureBar && m_pTextureBar->IsValid())
     {

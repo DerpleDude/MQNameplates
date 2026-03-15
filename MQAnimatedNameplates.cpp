@@ -353,4 +353,5 @@ PLUGIN_API void OnAddSpawn(PlayerClient* pSpawn)
 
 PLUGIN_API void OnRemoveSpawn(PlayerClient* pSpawn)
 {
+    s_nameplatesBySpawnId.erase(pSpawn->SpawnID);
 }
