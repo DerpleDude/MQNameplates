@@ -99,7 +99,6 @@ public:
     ConfigVariable<HPBarStyle> HPBarStyleTarget{ m_container, "HPBarStyleTarget", HPBarStyle_ColorRange };
     ConfigVariable<HPBarStyle> HPBarStyleHaters{ m_container, "HPBarStyleHaters", HPBarStyle_ColorRange };
     ConfigVariable<HPBarStyle> HPBarStyleNPCs{ m_container, "HPBarStyleNPCs", HPBarStyle_ColorRange };
-
 };
 
 } // namespace Ui

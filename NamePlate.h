@@ -44,7 +44,7 @@ public:
 
     void RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell);
     
-    void RenderDebugNameplateRect(const ImVec2& min, const ImVec2& max, ImU32 color, float rounding);
+    void RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 color, float rounding, float scale, float finalScale);
 
     std::chrono::steady_clock::time_point GetLastRenderTime() const { return m_lastRenderTime; }
 

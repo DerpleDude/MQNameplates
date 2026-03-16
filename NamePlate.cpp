@@ -11,6 +11,14 @@ namespace Ui {
 
 static const ImGuiID pct_id = ImHashStr("pct_tween");
 
+ImU32 ReduceAlpha(ImU32 col, float factor)
+{
+    ImU32 a = (col >> 24) & 0xFF;   // extract alpha
+    a = static_cast<ImU32>(a * factor);
+
+    return (col & 0x00FFFFFF) | (a << 24);
+}
+
 Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn, mq::MQColor conColor)
     : m_id(id)
     , m_conColor(conColor)
@@ -43,8 +51,6 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
     float finalScale = (1.0f/scale) * config.ScaleFactor;
 
     float dt = ImGui::GetIO().DeltaTime;
-
-    float distance = GetDistance(m_pSpawn->X, m_pSpawn->Y);
 
     ImVec2 scaledFameSize = frameSize * ImVec2(finalScale, finalScale);
 
@@ -86,7 +92,7 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
     }
 
     m_smoothPercent = iam_tween_float(ImHashStr(m_id.c_str()), pct_id, percent, 0.5f,
-        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt, percent) / 100.0f;
+        iam_ease_preset(iam_ease_out_cubic), iam_policy_crossfade, dt, m_targetPercent) / 100.0f;
 
     if (m_pTextureBar && m_pTextureBar->IsValid())
     {
@@ -258,12 +264,7 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
     ImGui::PopFont();
     
     // Render Debug Overlay
-    if (config.ShowDebugPanel)
-    {
-        ImU32 pink = IM_COL32(240, 80, 240, 255);
-        drawList->AddText(botRight, pink, fmt::format("Scale: {:.5f} FinalScale: {:.5f}", 1.0f/scale, finalScale).c_str());
-        RenderDebugNameplateRect(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f);
-    }
+    RenderDebugInfo(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f, scale, finalScale);
 }
 
 void Nameplate::RenderNameplateText(const ImVec2& left_pos, ImU32 color, const char* text)
@@ -288,17 +289,22 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     float barW = barSize.x;
     float barH = barSize.y;
 
-    float  fillWidth = barW * m_smoothPercent;
-    float  fillMaxX = min.x + fillWidth;
+    float fillWidth = barW * m_smoothPercent;
+    float fillMaxX = min.x + fillWidth;
+    float fillWithTarget = barW * m_targetPercent;
+    float fillMaxTargetX = min.x + fillWithTarget;
 
     ImVec2 innerMin = min + ImVec2(1, +1);
     ImVec2 innerMax  = max - ImVec2(1, +1);
     ImVec2 fillMax  = ImVec2(fillMaxX, max.y);
+    ImVec2 fillMaxTarget = ImVec2(fillMaxTargetX, max.y);
     ImVec2 innerFillMax = fillMax - ImVec2(1, 1);
+    ImVec2 innerFillMaxTarget = fillMaxTarget - ImVec2(1, 1);
 
     ImU32 bgTop    = IM_COL32(28, 30, 41, 247);
     ImU32 bgBottom = IM_COL32(10, 13, 20, 247);
 
+    // Dark background
     AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, config.BarRounding, 0);
 
     drawList->AddRectFilled(innerMin, ImVec2(max.x - 1, min.y + std::max(2.0f, barH * 0.35f)),
@@ -332,12 +338,30 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
         ImU32 bottomRight = topRight;
 
         float fillRounding = std::min({ config.BarRounding.get(), barH * 0.5f, fillWidth * 0.5f });
-
-        drawList->AddRectFilled(min, fillMax, colLow, fillRounding);
-
+        
         if (fillMax.x > innerMin.x && fillMax.y > innerMin.y)
         {
-            AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
+            // Draw one for where we are going and another for the smooth.
+            if (m_smoothPercent != m_targetPercent)
+            {
+                if (m_smoothPercent > m_targetPercent)
+                {
+                    // moving down
+                    AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
+                    AddRectFilledMultiColorRounded(innerMin, innerFillMax, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight,0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft,0.5f), config.BarRounding, 0);
+                    
+                }
+                else
+                {
+                    // moving up
+                    AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, ReduceAlpha(topLeft, 0.25f), ReduceAlpha(topRight, 0.25f), ReduceAlpha(bottomRight, 0.25f), ReduceAlpha(bottomLeft, 0.25f), config.BarRounding, 0);
+                    AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
+                }
+            }
+            else
+            {
+                AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
+            }
 
             float glossMaxY = std::min(innerFillMax.y, min.y + std::max(2.0f, barH * 0.45f));
 
@@ -348,6 +372,10 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
                     IM_COL32(255, 255, 255, 2), IM_COL32(255, 255, 255, 8),
                     config.BarRounding, 0);
             }
+        }
+        else
+        {
+            drawList->AddRectFilled(min, fillMax, colLow, fillRounding);
         }
 
         if (fillWidth > 12)
@@ -418,12 +446,16 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     drawList->AddText(ImVec2(textX, textY), IM_COL32(255, 255, 255, 255), text.c_str());
 }
 
-void Nameplate::RenderDebugNameplateRect(const ImVec2& min, const ImVec2& max, ImU32 color, float rounding)
+void Nameplate::RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 color, float rounding, float scale, float finalScale)
 {
     if (!Ui::Config::Get().ShowDebugPanel)
         return;
 
     ImDrawList* drawList = Nameplate::GetDrawList();
+
+
+    ImU32 pink = IM_COL32(240, 80, 240, 255);
+    drawList->AddText(min + ImVec2(0, ImGui::GetTextLineHeightWithSpacing()), pink, fmt::format("Scale: {:.5f} FinalScale: {:.5f}", 1.0f / scale, finalScale).c_str());
 
     drawList->AddRectFilled(min, max, color, rounding);
 }
