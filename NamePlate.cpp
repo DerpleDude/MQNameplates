@@ -378,41 +378,6 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
         {
             drawList->AddRectFilled(min, fillMax, colLow, fillRounding);
         }
-
-        if (fillWidth > 12)
-        {
-            bool isAnimating = fabs(m_smoothPercent - m_targetPercent) > 0.5f;
-
-            float sweepSpeed = isAnimating ? 1.2f : 0.65f;
-            float sweepBase = fmodf(dt * sweepSpeed, 1.0f);
-
-            float sweep = (isAnimating || m_trendDirection < 0) ? (1.0f - sweepBase) : sweepBase;
-
-            float sheenCenter = min.x + (fillWidth * sweep);
-            float sheenHalf = std::min(16.0f, fillWidth * 0.22f);
-
-            float sheenLeft = std::max(min.x + 1, sheenCenter - sheenHalf);
-            float sheenRight = std::min(fillMaxX - 1, sheenCenter + sheenHalf);
-
-            if (sheenRight > sheenLeft)
-            {
-                float sheenMid = (sheenLeft + sheenRight) * 0.5f;
-
-                float sheenAlpha = isAnimating ? 0.25f : 0.18f;
-
-                AddRectFilledMultiColorRounded(ImVec2(sheenLeft, min.y), ImVec2(sheenMid, max.y),
-                    IM_COL32(255, 255, 255, 0),
-                    IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
-                    IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
-                    IM_COL32(255, 255, 255, 0), config.BarRounding, 0);
-
-                AddRectFilledMultiColorRounded(ImVec2(sheenMid, min.y), ImVec2(sheenRight, max.y),
-                    IM_COL32(255, 255, 255, static_cast<int>(sheenAlpha * 255)),
-                    IM_COL32(255, 255, 255, 0), IM_COL32(255, 255, 255, 0),
-                    IM_COL32(255, 255, 255, static_cast<int>((sheenAlpha * 0.55f) * 255)),
-                    config.BarRounding, 0);
-            }
-        }
     }
 
     int hpTicks = 100 / Ui::Config::Get().HPTicks;
