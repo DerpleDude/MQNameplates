@@ -302,8 +302,8 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     ImVec2 innerFillMax = fillMax - ImVec2(1, 1);
     ImVec2 innerFillMaxTarget = fillMaxTarget - ImVec2(1, 1);
 
-    ImU32 bgTop    = IM_COL32(28, 30, 41, 247);
-    ImU32 bgBottom = IM_COL32(10, 13, 20, 247);
+    ImU32 bgTop    = IM_COL32(28, 30, 41, 247 * config.ConColorAlphaModifier);
+    ImU32 bgBottom = IM_COL32(10, 13, 20, 247 * config.ConColorAlphaModifier);
 
     // Dark background
     AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, config.BarRounding, 0);

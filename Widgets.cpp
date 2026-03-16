@@ -289,8 +289,15 @@ bool AnimatedSliderImpl(const char* label, T * slider_value, T slider_min, T sli
     dl->AddCircle(ImVec2(thumb_x, thumb_y), thumb_radius * thumb_scale, frame_color, 0, 2.0f);
 
     // Value text
-    dl->AddText(ImVec2(track_x + thumb_radius + slider_width + style.ItemInnerSpacing.x, label_pos.y),
-        ImGui::GetColorU32(ImGuiCol_Text), value_text);
+    char valueText[64];
+    sprintf_s(valueText, sizeof(valueText), format, *slider_value);
+    ImGui::SetCursorScreenPos(ImVec2(track_x + thumb_radius + slider_width + style.ItemInnerSpacing.x, label_pos.y));
+    ImGui::SetNextItemWidth(75);
+    if (ImGui::InputText("##input_value", valueText, sizeof(valueText), ImGuiInputTextFlags_CharsDecimal))
+    {
+        *slider_value = std::clamp(static_cast<T>(atof(valueText)), slider_min, slider_max);
+        changed = true;
+    }
 
     ImGui::PopID();
 
