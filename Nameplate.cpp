@@ -138,7 +138,11 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
         switch (style)
         {
         case HPBarStyle_SolidRed:
-            hpLow = hpMid = hpHigh = IM_COL32(204, 51, 51, 255);
+            hpLow = hpMid = hpHigh = IM_COL32(204, 51, 51, 255 * config.ConColorAlphaModifier);
+            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+            break;
+        case HPBarStyle_SolidWhite:
+            hpLow = hpMid = hpHigh = IM_COL32(255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier);
             highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
             break;
         case HPBarStyle_ConColor:

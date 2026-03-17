@@ -8,6 +8,7 @@ namespace Ui {
 
 enum HPBarStyle
 {
+    HPBarStyle_SolidWhite,
     HPBarStyle_SolidRed,
     HPBarStyle_ConColor,
     HPBarStyle_ColorRange
@@ -19,7 +20,8 @@ struct config_enum_traits<HPBarStyle>
     static const std::vector<std::pair<HPBarStyle, std::string>>& values()
     {
         static std::vector<std::pair<HPBarStyle, std::string>> value_map = {
-            { HPBarStyle_SolidRed, "Solid Red" },
+            { HPBarStyle_SolidWhite, "White" },
+            { HPBarStyle_SolidRed, "Red" },
             { HPBarStyle_ConColor, "Con Color" },
             { HPBarStyle_ColorRange, "Color Range" }
         };

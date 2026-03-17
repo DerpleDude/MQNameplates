@@ -96,8 +96,8 @@ public:
         Ui::Config& config = Ui::Config::Get();
 
         RenderOption(config.HPBarStyleSelf, "Self HP Bar Style");
-        RenderOption(config.HPBarStyleGroup, "Group HP Bar Style");
         RenderOption(config.HPBarStyleTarget, "Target HP Bar Style");
+        RenderOption(config.HPBarStyleGroup, "Group HP Bar Style");
         RenderOption(config.HPBarStyleHaters, "Haters HP Bar Style");
         RenderOption(config.HPBarStyleNPCs, "NPCs HP Bar Style");
 

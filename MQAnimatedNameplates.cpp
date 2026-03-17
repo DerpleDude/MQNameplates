@@ -22,6 +22,7 @@
 #include "imgui_internal.h"
 #include "sol/sol.hpp"
 
+#include <ranges>
 #include <unordered_map>
 
 PreSetup("MQAnimatedNameplates");
@@ -273,41 +274,41 @@ PLUGIN_API void OnUpdateImGui()
 
         Ui::Config& config = Ui::Config::Get();
 
+        std::map<uint32_t, Ui::HPBarStyle> nameplateTypesBySpawnId;
+        std::vector<PlayerClient*> spawnsToRenderByDistance;
+
         if (config.RenderForSelf) 
         {
-            if (!config.RenderForTarget || !pTarget || pLocalPlayer->SpawnID != pTarget->SpawnID)
-                DrawNameplates(pLocalPlayer, config.HPBarStyleSelf.get());
+            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pLocalPlayer->SpawnID, config.HPBarStyleSelf); inserted)
+            {
+                spawnsToRenderByDistance.push_back(pLocalPlayer);
+            }
         }
+
+        if (config.RenderForTarget && pTarget)
+        {
+            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pTarget->SpawnID, config.HPBarStyleTarget); inserted)
+            {
+                spawnsToRenderByDistance.push_back(pTarget);
+            }
+        }
+
         if (config.RenderForGroup && pLocalPC->pGroupInfo)
         {
             for (int i = 0; i < MAX_GROUP_SIZE; i++)
             {
                 CGroupMember* pGroupMember = pLocalPC->pGroupInfo->GetGroupMember(i);
-                if (pGroupMember && pGroupMember->GetPlayer()
-                    && pGroupMember->GetPlayer()->SpawnID != pLocalPlayer->SpawnID)
+                if (pGroupMember && pGroupMember->GetPlayer())
                 {
-                    DrawNameplates(pGroupMember->GetPlayer(), config.HPBarStyleGroup.get());
+                    if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pGroupMember->GetPlayer()->SpawnID, config.HPBarStyleGroup); inserted)
+                    {
+                        spawnsToRenderByDistance.push_back(pGroupMember->GetPlayer());
+                    }
                 }
             }
         }
 
-        if (config.RenderForNPCs)
-        {
-            PlayerClient* pSpawn = pSpawnManager->FirstSpawn;
-            while (pSpawn)
-            {
-                if (GetSpawnType(pSpawn) == NPC)
-                {
-                    if (!config.RenderForTarget || !pTarget || pSpawn->SpawnID != pTarget->SpawnID)
-                    {
-                        DrawNameplates(pSpawn, config.HPBarStyleNPCs.get());
-                    }
-                }
-                
-                pSpawn = pSpawn->GetNext();
-            }
-        }
-        else if (config.RenderForAllHaters)
+        if (config.RenderForAllHaters)
         {
             if (pLocalPC)
             {
@@ -319,11 +320,11 @@ PLUGIN_API void OnUpdateImGui()
 
                     if (xts->SpawnID && xts->xTargetType == XTARGET_AUTO_HATER)
                     {
-                        if (!config.RenderForTarget || !pTarget || xts->SpawnID != pTarget->SpawnID)
+                        if (PlayerClient* pSpawn = GetSpawnByID(xts->SpawnID))
                         {
-                            if (PlayerClient* pSpawn = GetSpawnByID(xts->SpawnID))
+                            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pSpawn->SpawnID, config.HPBarStyleHaters); inserted)
                             {
-                                DrawNameplates(pSpawn, config.HPBarStyleHaters.get());
+                                spawnsToRenderByDistance.push_back(pSpawn);
                             }
                         }
                     }
@@ -331,10 +332,36 @@ PLUGIN_API void OnUpdateImGui()
             }
         }
 
-        if (config.RenderForTarget)
+        if (config.RenderForNPCs)
         {
-            DrawNameplates(pTarget, config.HPBarStyleTarget.get(), true);
+            PlayerClient* pSpawn = pSpawnManager->FirstSpawn;
+            while (pSpawn)
+            {
+                if (GetSpawnType(pSpawn) == NPC)
+                {
+                    if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pSpawn->SpawnID, config.HPBarStyleNPCs); inserted)
+                    {
+                        spawnsToRenderByDistance.push_back(pSpawn);
+                    }
+                }
+                
+                pSpawn = pSpawn->GetNext();
+            }
         }
+
+        std::ranges::sort(spawnsToRenderByDistance.begin(), spawnsToRenderByDistance.end(), [](PlayerClient* a, PlayerClient* b) {
+            float distA = GetDistanceSquared(a->Y, a->X, pLocalPlayer->Y, pLocalPlayer->X);
+            float distB = GetDistanceSquared(b->Y, b->X, pLocalPlayer->Y, pLocalPlayer->X);
+            return distA < distB;
+            });
+
+        for (auto pSpawn : spawnsToRenderByDistance)
+        {
+            if (auto it = nameplateTypesBySpawnId.find(pSpawn->SpawnID); it != nameplateTypesBySpawnId.end())
+                DrawNameplates(pSpawn, it->second);
+
+        }
+
     }
     else if (!s_nameplatesBySpawnId.empty())
     {
