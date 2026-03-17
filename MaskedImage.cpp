@@ -118,20 +118,6 @@ static void MaskAfter(const ImDrawList*, const ImDrawCmd*)
     }
 }
 
-static ImVec2 GetTextureSize(ImTextureID texId)
-{
-    if (!texId)
-        return { 1.0f, 1.0f };
-
-    auto* tex = static_cast<IDirect3DTexture9*>(texId);
-    D3DSURFACE_DESC desc{};
-    if (SUCCEEDED(tex->GetLevelDesc(0, &desc)))
-        return { static_cast<float>(desc.Width), static_cast<float>(desc.Height) };
-
-    return { 1.0f, 1.0f };
-}
-
-// Helper: emit one masked quad with independent source and mask UVs.
 static void AddMaskedImage(ImDrawList* dl,
     ImTextureID srcTex,  const ImVec2& destMin, const ImVec2& destMax,
     const ImVec2& srcUvMin,  const ImVec2& srcUvMax,
@@ -175,7 +161,7 @@ void MaskedImage::Render(ImDrawList* dl, const ImVec2& min, const ImVec2& max, I
         tint);
 }
 
-void MaskedImage::RenderNineSlice(ImDrawList* dl, const ImVec2& min, const ImVec2& max, const ImVec4& margins, ImU32 tint) const
+void MaskedImage::RenderNineSlice(ImDrawList* dl, const ImVec2& min, const ImVec2& max, const ImVec2& maskSize, const ImVec4& margins, ImU32 tint) const
 {
     if (!IsValid())
         return;
@@ -201,13 +187,24 @@ void MaskedImage::RenderNineSlice(ImDrawList* dl, const ImVec2& min, const ImVec
     const float right  = margins.z * sx;
     const float bottom = margins.w * sy;
 
-    const ImVec2 srcSize  = GetTextureSize(m_pSource->GetTextureID());
-    const ImVec2 maskSize = GetTextureSize(m_pMask->GetTextureID());
+    const ImVec2 srcSize  = m_pSource->GetTextureSize();
 
     const float srcUvX[4]  = { 0.0f, left / srcSize.x,  1.0f - right  / srcSize.x,  1.0f };
     const float srcUvY[4]  = { 0.0f, top  / srcSize.y,  1.0f - bottom / srcSize.y,  1.0f };
-    const float maskUvX[4] = { 0.0f, left / maskSize.x, 1.0f - right  / maskSize.x, 1.0f };
-    const float maskUvY[4] = { 0.0f, top  / maskSize.y, 1.0f - bottom / maskSize.y, 1.0f };
+    
+    const float maskUvX[4] = {
+        0.0f,
+        margins.x / maskSize.x,
+        (maskSize.x - margins.z) / maskSize.x,
+        1.0f
+    };
+
+    const float maskUvY[4] = {
+        0.0f,
+        margins.y / maskSize.y,
+        (maskSize.y - margins.w) / maskSize.y,
+        1.0f
+    };
 
     const float dX[4] = { min.x, min.x + left,   max.x - right,  max.x };
     const float dY[4] = { min.y, min.y + top,    max.y - bottom, max.y };
@@ -234,6 +231,66 @@ void MaskedImage::RenderNineSlice(ImDrawList* dl, const ImVec2& min, const ImVec
                 m_pMask->GetTextureID(),
                 maskUvMin, maskUvMax,
                 tint);
+        }
+    }
+}
+
+void MaskedImage::RenderMask(ImDrawList* dl, const ImVec2& min, const ImVec2& max, ImU32 tint) const
+{
+    if (!m_pMask || !m_pMask->IsValid())
+        return;
+
+    dl->AddImage(m_pMask->GetTextureID(), min, max, ImVec2(0, 0), ImVec2(1, 1), tint);
+}
+
+void MaskedImage::RenderMaskNineSlice(ImDrawList* dl, const ImVec2& min, const ImVec2& max, const ImVec2& maskSize, const ImVec4& margins, ImU32 tint) const
+{
+    if (!m_pMask || !m_pMask->IsValid())
+        return;
+
+    const float destW = max.x - min.x;
+    const float destH = max.y - min.y;
+
+    const float sx = (margins.x + margins.z > destW && destW > 0.0f) ? destW / (margins.x + margins.z) : 1.0f;
+    const float sy = (margins.y + margins.w > destH && destH > 0.0f) ? destH / (margins.y + margins.w) : 1.0f;
+
+    const float left   = margins.x * sx;
+    const float top    = margins.y * sy;
+    const float right  = margins.z * sx;
+    const float bottom = margins.w * sy;
+
+    const float maskUvX[4] = {
+    0.0f,
+    margins.x / maskSize.x,
+    (maskSize.x - margins.z) / maskSize.x,
+    1.0f
+    };
+
+    const float maskUvY[4] = {
+        0.0f,
+        margins.y / maskSize.y,
+        (maskSize.y - margins.w) / maskSize.y,
+        1.0f
+    };
+
+    const float dX[4] = { min.x, min.x + left,  max.x - right,  max.x };
+    const float dY[4] = { min.y, min.y + top,   max.y - bottom, max.y };
+    const ImU32 colors[3] = { IM_COL32(240,0,0,20), IM_COL32(0,240,0,20) ,IM_COL32(0,0,240,20) };
+
+    for (int row = 0; row < 3; ++row)
+    {
+        for (int col = 0; col < 3; ++col)
+        {
+            ImVec2 destMin(dX[col],     dY[row]);
+            ImVec2 destMax(dX[col + 1], dY[row + 1]);
+
+            if (destMax.x <= destMin.x || destMax.y <= destMin.y)
+                continue;
+
+            dl->AddRectFilled(destMin, destMax, colors[col]);
+
+            dl->AddImage(m_pMask->GetTextureID(), destMin, destMax,
+                ImVec2(maskUvX[col], maskUvY[row]), ImVec2(maskUvX[col + 1], maskUvY[row + 1]), tint);
         }
     }
 }

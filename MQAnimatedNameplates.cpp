@@ -8,7 +8,7 @@
 // By: Derple derple@ntsj.com
 
 #include "Config.h"
-#include "NamePlate.h"
+#include "Nameplate.h"
 #include "SettingsPanel.h"
 
 #include "eqlib/graphics/CameraInterface.h"

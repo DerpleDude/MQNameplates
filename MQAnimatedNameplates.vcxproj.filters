@@ -24,7 +24,7 @@
     <ClCompile Include="Config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NamePlate.cpp">
+    <ClCompile Include="Nameplate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Widgets.cpp">
@@ -47,7 +47,7 @@
     <ClInclude Include="Config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NamePlate.h">
+    <ClInclude Include="Nameplate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Widgets.h">
