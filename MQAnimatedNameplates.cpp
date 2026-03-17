@@ -31,6 +31,10 @@ PLUGIN_VERSION(0.1);
 iam_context* context = nullptr;
 
 static std::unordered_map<uint32_t, Ui::Nameplate> s_nameplatesBySpawnId;
+static std::vector<Ui::Nameplate*> s_nameplatesToRenderByDistance;
+constexpr std::chrono::milliseconds SPAWN_SORT_INTERVAL{ 100 };
+static std::chrono::steady_clock::time_point s_lastRenderTime{};
+
 static std::chrono::steady_clock::time_point s_lastExpirationCheck{};
 
 static constexpr std::chrono::seconds expiration_time{ 30 };
@@ -208,35 +212,35 @@ static bool GetNameplatePositionFromBones(PlayerClient* pSpawn, ImVec2& outCoord
     return true;
 }
 
-static void DrawNameplates(PlayerClient* pSpawn, Ui::HPBarStyle style, bool alwaysVisible = false)
+Ui::HPBarStyle GetCategoryForSpawn(PlayerClient* pSpawn)
 {
-    if (!pSpawn || !pDisplay)
+    auto it = s_nameplatesBySpawnId.find(pSpawn->SpawnID);
+    if (it == s_nameplatesBySpawnId.end())
+    {
+        return Ui::HPBarStyle_Invalid;
+    }
+
+    return it->second.GetBarStyle();
+}
+
+static void DrawNameplates(Ui::Nameplate* pNameplate, bool alwaysVisible = false)
+{
+    if (!pDisplay)
         return;
 
-    if (!alwaysVisible && !CanSeeNameplate(pSpawn))
+    if (!alwaysVisible && !CanSeeNameplate(pNameplate->GetSpawn()))
         return;
 
     Ui::Config& config = Ui::Config::Get();
     const ImVec2 canvasSize(config.NameplateWidth, 50);
 
-    float pctHP = pSpawn->HPMax == 0 ? 0 : pSpawn->HPCurrent * 100.0f / pSpawn->HPMax;
-
-    char hpBarID[32];
-    sprintf_s(hpBarID, "TargetHPBar_%d", pSpawn->SpawnID);
-    mq::MQColor conColor = GetColorForChatColor(ConColor(pSpawn));
-
-    auto [it, inserted] =
-        s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn, config.DrawTestBar ? config.BarPercent : pctHP, conColor);
-
-    Ui::Nameplate& nameplate = it->second;
-
     float nameplateScale = 1.0f;
     ImVec2 targetNameplatePos;
 
-    if (!GetNameplatePositionFromBones(pSpawn, targetNameplatePos, nameplateScale))
+    if (!GetNameplatePositionFromBones(pNameplate->GetSpawn(), targetNameplatePos, nameplateScale))
         return;
 
-    nameplate.Render(targetNameplatePos, canvasSize, nameplateScale, config.DrawTestBar ? config.BarPercent : pctHP, style, pTarget == pSpawn);
+    pNameplate->Render(targetNameplatePos, canvasSize, nameplateScale);
 }
 
 PLUGIN_API void InitializePlugin()
@@ -265,8 +269,15 @@ PLUGIN_API void OnUpdateImGui()
             // cleanup stale nameplates
             for (auto it = s_nameplatesBySpawnId.begin(); it != s_nameplatesBySpawnId.end();)
             {
-                if (now - it->second.GetLastRenderTime() > expiration_time)
+                if (now - it->second.GetLastRenderTime() > expiration_time
+                    || it->second.GetNameplateType() == Ui::NameplateType_Target && !it->second.IsCurrentTarget()
+                    || it->second.GetNameplateType() == Ui::NameplateType_Group && !it->second.IsInGroup()
+                    || it->second.GetNameplateType() == Ui::NameplateType_AutoHater && !it->second.IsAutoHater()
+                    )
+                {
+                    std::erase(s_nameplatesToRenderByDistance, &it->second);
                     it = s_nameplatesBySpawnId.erase(it);
+                }
                 else
                     ++it;
             }
@@ -274,23 +285,30 @@ PLUGIN_API void OnUpdateImGui()
 
         Ui::Config& config = Ui::Config::Get();
 
-        std::map<uint32_t, Ui::HPBarStyle> nameplateTypesBySpawnId;
-        std::vector<PlayerClient*> spawnsToRenderByDistance;
+        char hpBarID[32];
 
         if (config.RenderForSelf) 
         {
-            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pLocalPlayer->SpawnID, config.HPBarStyleSelf); inserted)
+            sprintf_s(hpBarID, "TargetHPBar_%d", pLocalPlayer->SpawnID);
+            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pLocalPlayer->SpawnID, hpBarID, pLocalPlayer);
+            if (inserted)
             {
-                spawnsToRenderByDistance.push_back(pLocalPlayer);
+                s_nameplatesToRenderByDistance.push_back(&it->second);
             }
+
+            it->second.SetNameplateType(Ui::NameplateType::NameplateType_Self);
         }
 
         if (config.RenderForTarget && pTarget)
         {
-            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pTarget->SpawnID, config.HPBarStyleTarget); inserted)
+            sprintf_s(hpBarID, "TargetHPBar_%d", pTarget->SpawnID);
+            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pTarget->SpawnID, hpBarID, pTarget);
+            if (inserted)
             {
-                spawnsToRenderByDistance.push_back(pTarget);
+                s_nameplatesToRenderByDistance.push_back(&it->second);
             }
+
+            it->second.SetNameplateType(Ui::NameplateType::NameplateType_Target);
         }
 
         if (config.RenderForGroup && pLocalPC->pGroupInfo)
@@ -300,10 +318,14 @@ PLUGIN_API void OnUpdateImGui()
                 CGroupMember* pGroupMember = pLocalPC->pGroupInfo->GetGroupMember(i);
                 if (pGroupMember && pGroupMember->GetPlayer())
                 {
-                    if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pGroupMember->GetPlayer()->SpawnID, config.HPBarStyleGroup); inserted)
+                    sprintf_s(hpBarID, "TargetHPBar_%d", pGroupMember->GetPlayer()->SpawnID);
+                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pGroupMember->GetPlayer()->SpawnID, hpBarID, pGroupMember->GetPlayer());
+                    if (inserted)
                     {
-                        spawnsToRenderByDistance.push_back(pGroupMember->GetPlayer());
+                        s_nameplatesToRenderByDistance.push_back(&it->second);
                     }
+
+                    it->second.SetNameplateType(Ui::NameplateType::NameplateType_Group);
                 }
             }
         }
@@ -322,10 +344,14 @@ PLUGIN_API void OnUpdateImGui()
                     {
                         if (PlayerClient* pSpawn = GetSpawnByID(xts->SpawnID))
                         {
-                            if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pSpawn->SpawnID, config.HPBarStyleHaters); inserted)
+                            sprintf_s(hpBarID, "TargetHPBar_%d", pSpawn->SpawnID);
+                            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn);
+                            if (inserted)
                             {
-                                spawnsToRenderByDistance.push_back(pSpawn);
+                                s_nameplatesToRenderByDistance.push_back(&it->second);
                             }
+
+                            it->second.SetNameplateType(Ui::NameplateType::NameplateType_AutoHater);
                         }
                     }
                 }
@@ -339,33 +365,38 @@ PLUGIN_API void OnUpdateImGui()
             {
                 if (GetSpawnType(pSpawn) == NPC)
                 {
-                    if (auto [it, inserted] = nameplateTypesBySpawnId.try_emplace(pSpawn->SpawnID, config.HPBarStyleNPCs); inserted)
+                    sprintf_s(hpBarID, "TargetHPBar_%d", pSpawn->SpawnID);
+                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn);
+                    if (inserted)
                     {
-                        spawnsToRenderByDistance.push_back(pSpawn);
+                        s_nameplatesToRenderByDistance.push_back(&it->second);
                     }
+
+                    it->second.SetNameplateType(Ui::NameplateType::NameplateType_NPC);
                 }
                 
                 pSpawn = pSpawn->GetNext();
             }
         }
 
-        std::ranges::sort(spawnsToRenderByDistance.begin(), spawnsToRenderByDistance.end(), [](PlayerClient* a, PlayerClient* b) {
-            float distA = GetDistanceSquared(a->Y, a->X, pLocalPlayer->Y, pLocalPlayer->X);
-            float distB = GetDistanceSquared(b->Y, b->X, pLocalPlayer->Y, pLocalPlayer->X);
-            return distA < distB;
-            });
-
-        for (auto pSpawn : spawnsToRenderByDistance)
+        if (std::chrono::steady_clock::now() > s_lastRenderTime + SPAWN_SORT_INTERVAL)
         {
-            if (auto it = nameplateTypesBySpawnId.find(pSpawn->SpawnID); it != nameplateTypesBySpawnId.end())
-                DrawNameplates(pSpawn, it->second);
+            // sort by furthest away
+            std::ranges::sort(s_nameplatesToRenderByDistance.begin(), s_nameplatesToRenderByDistance.end(), [](Ui::Nameplate* a, Ui::Nameplate* b) {
+                return a->GetDistplaceToPlayer() > b->GetDistplaceToPlayer();
+                });
+        }
 
+        for (auto pNameplate : s_nameplatesToRenderByDistance)
+        {
+            DrawNameplates(pNameplate);
         }
 
     }
     else if (!s_nameplatesBySpawnId.empty())
     {
         s_nameplatesBySpawnId.clear();
+        s_nameplatesToRenderByDistance.clear();
     }
 }
 
@@ -380,5 +411,10 @@ PLUGIN_API void OnAddSpawn(PlayerClient* pSpawn)
 
 PLUGIN_API void OnRemoveSpawn(PlayerClient* pSpawn)
 {
-    s_nameplatesBySpawnId.erase(pSpawn->SpawnID);
+    auto it = s_nameplatesBySpawnId.find(pSpawn->SpawnID);
+    if (it != s_nameplatesBySpawnId.end())
+    {
+        std::erase(s_nameplatesToRenderByDistance, &it->second);
+        s_nameplatesBySpawnId.erase(it);
+    }
 }

@@ -24,23 +24,23 @@ ImU32 ReduceAlpha(ImU32 col, float factor)
     return (col & 0x00FFFFFF) | (a << 24);
 }
 
-Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn, float initPctHp, mq::MQColor conColor)
+Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn)
     : m_id(id)
     , m_idHash(ImHashStr(id.c_str()))
-    , m_conColor(conColor)
     , m_pSpawn(pSpawn)
-    , m_targetPercent(std::clamp(initPctHp, 0.0f, 100.0f) / 100.f)
+    , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
+    , m_targetPercent(GetSpawnPercentHP() / 100.f)
 {
     InitIamAnim();
 }
 
-Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn, float initPctHp, mq::MQColor conColor,
+Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn,
     const std::string& textureFrame, const std::string& textureBar)
     : m_id(id)
     , m_idHash(ImHashStr(id.c_str()))
-    , m_conColor(conColor)
     , m_pSpawn(pSpawn)
-    , m_targetPercent(std::clamp(initPctHp, 0.0f, 100.0f) / 100.f)
+    , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
+    , m_targetPercent(GetSpawnPercentHP() / 100.f)
 {
     m_pTextureFrame = mq::CreateTexturePtr(textureFrame);
     m_pTextureBar = mq::CreateTexturePtr(textureBar);
@@ -66,12 +66,12 @@ ImDrawList* Nameplate::GetDrawList()
     return Ui::Config::Get().RenderToForeground ? ImGui::GetForegroundDrawList() : ImGui::GetBackgroundDrawList();
 }
 
-void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale, float percent,
-    Ui::HPBarStyle style, bool currentTarget)
+void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
 {
     // track the last render and clean up after 30s of non-usage.
     m_lastRenderTime = std::chrono::steady_clock::now();
-    
+    float percent = GetSpawnPercentHP();
+
     ImDrawList* drawList = Nameplate::GetDrawList();
     Ui::Config& config = Ui::Config::Get();
 
@@ -129,32 +129,15 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
     }
     else
     {
-        ImU32 hpLow  = IM_COL32(204, 51,  51, 255);
-        ImU32 hpMid  = IM_COL32(230, 179, 51, 255);
-        ImU32 hpHigh = IM_COL32(51,  230, 51, 255);
+        ImU32 hpLow;
+        ImU32 hpMid;
+        ImU32 hpHigh;
 
         ImU32 highlightColor;
 
-        switch (style)
-        {
-        case HPBarStyle_SolidRed:
-            hpLow = hpMid = hpHigh = IM_COL32(204, 51, 51, 255 * config.ConColorAlphaModifier);
-            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
-            break;
-        case HPBarStyle_SolidWhite:
-            hpLow = hpMid = hpHigh = IM_COL32(255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier);
-            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
-            break;
-        case HPBarStyle_ConColor:
-            hpLow = hpMid = hpHigh = ReduceAlpha(m_conColor.ToImU32(), config.ConColorAlphaModifier);
-            highlightColor = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
-            break;
-        case HPBarStyle_ColorRange:
-            highlightColor = m_conColor.ToImU32();
-            break;
-        }
+        GetNameplateColors(hpLow, hpMid, hpHigh, highlightColor);
 
-        RenderAnimatedPercentageBar(center_pos, barSize, hpLow, hpMid, hpHigh, highlightColor, currentTarget);
+        RenderAnimatedPercentageBar(center_pos, barSize, hpLow, hpMid, hpHigh, highlightColor);
     }
 
     if (m_pTextureFrame && m_pTextureFrame->IsValid())
@@ -167,14 +150,14 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale,
 
     // if we will render guild/purpose text, move the text up a line to make room.
     if ((config.ShowGuild && eqlib::pGuild && m_pSpawn->GuildID > 0)
-        || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0]))
+        || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NameplateType_NPC && m_pSpawn->Lastname[0]))
     {
         //
         // Detail
         //
 
         std::string targetDetail;
-        if (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0])
+        if (config.ShowPurpose && GetSpawnType(m_pSpawn) == NameplateType_NPC && m_pSpawn->Lastname[0])
         {
             targetDetail = fmt::format("({})", m_pSpawn->Lastname);
         }
@@ -305,11 +288,11 @@ void Nameplate::RenderNameplateText(const ImVec2& left_pos, ImU32 color, const c
 }
 
 void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVec2& barSize,
-                                            ImU32 colLow, ImU32 colMid, ImU32 colHigh, ImU32 colHighlight,
-                                            bool currentTarget /* = false */)
+                                            ImU32 colLow, ImU32 colMid, ImU32 colHigh, ImU32 colHighlight)
 {
     ImDrawList* drawList = Nameplate::GetDrawList();
     Ui::Config& config = Ui::Config::Get();
+    bool currentTarget = IsCurrentTarget();
 
     // FIXME: This should be accumulated time, not absolute time
     float dt = static_cast<float>(ImGui::GetTime());
@@ -452,7 +435,7 @@ void Nameplate::RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 colo
 
     ImU32 pink = IM_COL32(240, 80, 240, 255);
     char debugText[128];
-    sprintf_s(debugText, "Scale: %.5f FinalScale: %.5f TargetPct: %.2f SmoothPct: %.2f", 1.0f / scale, finalScale, m_targetPercent, m_smoothPercent);
+    sprintf_s(debugText, "Distance: %.2f Scale: %.5f FinalScale: %.5f TargetPct: %.2f SmoothPct: %.2f", GetDistplaceToPlayer(), 1.0f / scale, finalScale, m_targetPercent, m_smoothPercent);
 
     ImVec2 textPos{ min.x, max.y + ImGui::GetTextLineHeightWithSpacing() };
     drawList->AddText(textPos, pink, debugText);
@@ -476,6 +459,118 @@ void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell)
             mq::imgui::DrawTextureAnimation(drawList, anim, pos, size);
         }
     }
+}
+
+bool Nameplate::IsCurrentTarget() const
+{
+    return pTarget == m_pSpawn;
+}
+
+bool Nameplate::IsInGroup() const
+{
+    if (pLocalPC->pGroupInfo)
+        return false;
+
+    return pLocalPC->pGroupInfo->GetGroupMember(m_pSpawn) != nullptr;
+}
+
+bool Nameplate::IsAutoHater() const
+{
+    if (pLocalPC)
+        return false;
+
+    ExtendedTargetList* xtm = pLocalPC->pExtendedTargetList;
+
+    for (int i = 0; i < xtm->GetNumSlots(); i++)
+    {
+        ExtendedTargetSlot* xts = xtm->GetSlot(i);
+
+        if (xts->SpawnID == m_pSpawn->SpawnID && xts->xTargetType == XTARGET_AUTO_HATER)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+float Nameplate::GetDistplaceToPlayer() const
+{
+    if (!m_pSpawn)
+        return 0.0f;
+
+    return GetDistance(m_pSpawn->Y, m_pSpawn->X, pControlledPlayer->Y, pControlledPlayer->X);
+}
+
+void Nameplate::GetNameplateColors(ImU32& lowOut, ImU32& midOut, ImU32& highOut, ImU32& highlightOut) const
+{
+    Ui::HPBarStyle style = GetBarStyle();
+    Ui::Config& config = Ui::Config::Get();
+
+    bool currentTarget = IsCurrentTarget();
+    lowOut = IM_COL32(204, 51, 51, 255);
+    midOut = IM_COL32(230, 179, 51, 255);
+    highOut = IM_COL32(51, 230, 51, 255);
+
+    highlightOut = m_conColor.ToImU32();
+
+    switch (style)
+    {
+    case HPBarStyle_SolidRed:
+        lowOut = midOut = highOut = IM_COL32(204, 51, 51, 255 * config.ConColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_SolidWhite:
+        lowOut = midOut = highOut = IM_COL32(255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_ConColor:
+        lowOut = midOut = highOut = ReduceAlpha(m_conColor.ToImU32(), config.ConColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_ColorRange:
+        break;
+    default: break;
+    }
+}
+
+Ui::HPBarStyle Nameplate::GetBarStyle() const
+{
+    Ui::Config& config = Ui::Config::Get();
+
+    switch (m_nameplateType)
+    {
+        case Ui::NameplateType::NameplateType_Self:
+            return config.HPBarStyleSelf;
+        case Ui::NameplateType::NameplateType_Group:
+            return config.HPBarStyleGroup;
+        case Ui::NameplateType::NameplateType_Target:
+            return config.HPBarStyleTarget;
+        case Ui::NameplateType::NameplateType_AutoHater:
+            return config.HPBarStyleHaters;
+        case Ui::NameplateType::NameplateType_NPC:
+            return config.HPBarStyleNPCs;
+            default:
+                return Ui::HPBarStyle_Invalid;
+    }
+}   
+
+void Nameplate::SetNameplateType(Ui::NameplateType type)
+{
+    m_nameplateType = type;
+}
+
+float Nameplate::GetSpawnPercentHP() const
+{
+    Ui::Config& config = Ui::Config::Get();
+
+    if (config.DrawTestBar)
+        return config.BarPercent;
+
+    if (!m_pSpawn)
+        return 0.0f;
+
+    return m_pSpawn->HPMax == 0 ? 0 : m_pSpawn->HPCurrent * 100.0f / m_pSpawn->HPMax;
 }
 
 ImVec2 Nameplate::m_getTextPosition(TextPositioning location, const ImVec2& center_pos, const float lineWidth, const char* text, float& textWidthOut)

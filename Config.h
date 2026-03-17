@@ -8,10 +8,11 @@ namespace Ui {
 
 enum HPBarStyle
 {
+    HPBarStyle_Invalid = -1,
     HPBarStyle_SolidWhite,
     HPBarStyle_SolidRed,
     HPBarStyle_ConColor,
-    HPBarStyle_ColorRange
+    HPBarStyle_ColorRange,
 };
 
 template <>
