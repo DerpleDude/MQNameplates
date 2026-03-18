@@ -15,6 +15,7 @@ static MaskedImage g_maskedImage2{ "fishface.png", "BarBorders\\blizzard-cast-ba
 static MaskedImage g_maskedImage3{ "energy_filler_gold.png", "BarBorders\\round-square-mask.png" };
 
 static const ImGuiID pct_id = ImHashStr("pct_tween");
+static const ImGuiID target_scale_id = ImHashStr("target_scale_tween");
 
 ImU32 ReduceAlpha(ImU32 col, float factor)
 {
@@ -97,11 +98,21 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
 
     float finalScale = std::clamp(config.ScaleWithDistance ? (1.0f/scale) : 1.0f * config.ScaleFactor, config.MaxCalculatedScaleFactor.getMinValue(), config.MaxCalculatedScaleFactor.get());
 
+    float targetScale = 1.0f;
+    if (IsCurrentTarget())
+    {
+        targetScale = 1.1f;
+    }
+
+    float targetTween = iam_tween_float(m_idHash, target_scale_id, targetScale, 0.05f,
+        iam_ease_preset(iam_ease_linear), iam_policy_crossfade, ImGui::GetIO().DeltaTime, 1.00f);
+    finalScale *= targetTween;
+
     float dt = ImGui::GetIO().DeltaTime;
 
     ImVec2 scaledFameSize = frameSize * ImVec2(finalScale, finalScale);
 
-    ImGui::PushFont(nullptr, config.FontSize * finalScale);
+    ImGui::PushFont(nullptr, config.FontSize );
 
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
     const ImVec2 barSize{
@@ -458,7 +469,7 @@ void Nameplate::RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 colo
     {
         ImU32 pink = IM_COL32(240, 80, 240, 255);
         char debugText[128];
-        sprintf_s(debugText, "Distance: %.2f\nScale: %.5f FinalScale: %.5f\nTargetPct: %.2f SmoothPct: %.2f", GetDistplaceToPlayer(), 1.0f / scale, finalScale, m_targetPercent, m_smoothPercent);
+        sprintf_s(debugText, "CurrentTarget: %s Distance: %.2f\nScale: %.5f FinalScale: %.5f\nTargetPct: %.2f SmoothPct: %.2f", IsCurrentTarget() ? "true" : "false", GetDistplaceToPlayer(), 1.0f / scale, finalScale, m_targetPercent, m_smoothPercent);
 
         ImVec2 textPos{ min.x, max.y + ImGui::GetTextLineHeightWithSpacing() };
         ImVec2 textSize = ImGui::CalcTextSize(debugText);

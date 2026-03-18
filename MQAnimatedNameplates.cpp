@@ -392,6 +392,10 @@ PLUGIN_API void OnUpdateImGui()
         {
             // sort by furthest away
             std::ranges::sort(s_nameplatesToRenderByDistance.begin(), s_nameplatesToRenderByDistance.end(), [](Ui::Nameplate* a, Ui::Nameplate* b) {
+                if (a->IsCurrentTarget())
+                    return false;
+                if (b->IsCurrentTarget())
+                    return true;
                 return a->GetDistplaceToPlayer() > b->GetDistplaceToPlayer();
                 });
         }
