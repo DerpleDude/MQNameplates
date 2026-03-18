@@ -301,6 +301,15 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
         drawList->AddRect(topLeft - baseOffset, botRight + baseOffset, ReduceAlpha(m_conColor.ToImU32(), alphaOsc / 255.0f), 4.0f, 0, 2.0f);
     }
     
+    // click handling
+    if (ImGui::IsMouseHoveringRect(topLeft, botRight, false))
+    {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            pTarget = m_pSpawn;
+        }
+    }
+
     // Render Debug Overlay
     RenderDebugInfo(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f, scale, finalScale);
 }
