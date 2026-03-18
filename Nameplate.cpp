@@ -276,6 +276,30 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
     }
 
     ImGui::PopFont();
+
+    if (IsCurrentTarget() && Config::Get().ShowTargetIndicator)
+    {
+        /*
+        // draw some wings or something if this is our target.
+        float hue = (float)0.75;
+        ImVec4 col_hsv(hue, 0.8f, 0.9f, .8f);
+        ImVec4 col_rgb;
+        ImGui::ColorConvertHSVtoRGB(col_hsv.x, col_hsv.y, col_hsv.z, col_rgb.x, col_rgb.y, col_rgb.z);
+        col_rgb.w = .8f;
+
+        // this was dumb needs replaced with some sort of scale or glow.
+        //drawList->AddRectFilled(topLeft, botRight, IM_COL32((int)(col_rgb.x * 255), (int)(col_rgb.y * 255), (int)(col_rgb.z * 255), (int)(0.8 * 40)));
+        
+        static ImVec4 colorAmp(0.1f, .1f, .1f, .0f);
+        
+        static ImVec4 color{ m_conColor.Red / 255.0f, m_conColor.Green / 255.0f, m_conColor.Blue / 255.0f, m_conColor.Alpha / 255.0f };
+        
+        //ImVec4 oscColor = iam_oscillate_color(m_idHash, color, colorAmp, 2.0f, iam_wave_sine, 0.0f, iam_col_srgb, dt);
+        */
+        ImVec2 baseOffset{ config.TargetIndicatorPadding, config.TargetIndicatorPadding };
+        int alphaOsc = 80 + iam_oscillate_int(m_idHash, 40, config.TargetIndicatorBlinkSpeed, iam_wave_sine, 0.0f, dt);
+        drawList->AddRect(topLeft - baseOffset, botRight + baseOffset, ReduceAlpha(m_conColor.ToImU32(), alphaOsc / 255.0f), 4.0f, 0, 2.0f);
+    }
     
     // Render Debug Overlay
     RenderDebugInfo(topLeft, botRight, IM_COL32(40, 240, 40, 55), 3.0f, scale, finalScale);
@@ -397,12 +421,6 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
             IM_COL32(0, 0, 0, static_cast<int>((reached ? 0.15 : 0.3) * 255)), 1.0f);
         drawList->AddLine(ImVec2(tx, min.y + 1), ImVec2(tx, max.y - 1),
             IM_COL32(255, 255, 255, static_cast<int>((reached ? 0.3 : 0.15) * 255)), 1.0f);
-    }
-
-    // draw some wings or something if this is our target.
-    if (currentTarget && Config::Get().ShowTargetIndicatorWings)
-    {
-        // this was dumb needs replaced with some sort of scale or glow.
     }
 
     drawList->AddRect(min, max, colHighlight, Config::Get().BarRounding, 0, Config::Get().BarBorderThickness);

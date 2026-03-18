@@ -64,8 +64,9 @@ public:
     ConfigVariable<bool> ShowLevel{ m_container, "ShowLevel", true };
     ConfigVariable<bool> ShowClass{ m_container, "ShowClass", true };
     ConfigVariable<bool> ShortClassName{ m_container, "ShortClassName", true };
-    ConfigVariable<bool> ShowTargetIndicatorWings{ m_container, "ShowTargetIndicatorWings", true };
-    ConfigVariable<float> TargetIndicatorWingLength{ m_container, "TargetIndicatorWingLength", 15.0f, 5.0f, 75.0f };
+    ConfigVariable<bool> ShowTargetIndicator{ m_container, "ShowTargetIndicator", true };
+    ConfigVariable<float> TargetIndicatorPadding{ m_container, "TargetIndicatorPadding", 8.0f, 0.0f, 16.0f };
+    ConfigVariable<float> TargetIndicatorBlinkSpeed{ m_container, "TargetIndicatorBlinkSpeed", 0.75f, 0.0f, 4.0f };
     ConfigVariable<bool> DrawBarBorders{ m_container, "DrawBarBorders", true };
 
     // Rendering behavior

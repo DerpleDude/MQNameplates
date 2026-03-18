@@ -123,8 +123,9 @@ public:
         
         ImGui::NewLine();
 
-        RenderOption(config.ShowTargetIndicatorWings, "Show Target Indicator");
-        RenderOption(config.TargetIndicatorWingLength, "Target Indicator Length", 150, "%.0f");
+        RenderOption(config.ShowTargetIndicator, "Show Target Indicator");
+        RenderOption(config.TargetIndicatorPadding, "Indicator Padding", 150, "%.0f");
+        RenderOption(config.TargetIndicatorBlinkSpeed, "Indicator Blink Speed", 150, "%.2f");
     }
 
     void DrawSizeAndPositioningTab()
