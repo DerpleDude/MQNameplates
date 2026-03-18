@@ -356,24 +356,17 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
         if (fillMax.x > innerMin.x && fillMax.y > innerMin.y)
         {
             // Draw one for where we are going and another for the smooth.
-            if (m_smoothPercent != m_targetPercent)
+            if (m_smoothPercent > m_targetPercent)
             {
-                if (m_smoothPercent > m_targetPercent)
-                {
-                    // moving down
-                    AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
-                    AddRectFilledMultiColorRounded(innerMin, innerFillMax, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight,0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft,0.5f), config.BarRounding, 0);
+                // moving down
+                AddRectFilledMultiColorRounded(innerMin, innerFillMax, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight,0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft,0.5f), config.BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
                     
-                }
-                else
-                {
-                    // moving up
-                    AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, ReduceAlpha(topLeft, 0.25f), ReduceAlpha(topRight, 0.25f), ReduceAlpha(bottomRight, 0.25f), ReduceAlpha(bottomLeft, 0.25f), config.BarRounding, 0);
-                    AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
-                }
             }
             else
             {
+                // moving up
+                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight, 0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft, 0.5f), config.BarRounding, 0);
                 AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, config.BarRounding, 0);
             }
 
