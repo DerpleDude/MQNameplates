@@ -64,6 +64,8 @@ public:
 
     Ui::HPBarStyle GetBarStyle() const;
 
+    void ResetRenderNameSpriteState();
+
     void SetNameplateType(Ui::NameplateType type);
     Ui::NameplateType GetNameplateType() const { return m_nameplateType; }
     void GetNameplateColors(ImU32& lowOut, ImU32& midOut, ImU32& highOut, ImU32& highlightOut) const;
@@ -83,13 +85,13 @@ public:
 
     std::chrono::steady_clock::time_point m_lastRenderTime{};
     eqlib::PlayerClient* m_pSpawn;
-    ImVec2 m_lastPosition{ 0.0f, 0.0f };
-    int m_renderCount{ 0 };
     mq::MQColor m_conColor;
     Ui::NameplateType m_nameplateType{ Ui::NameplateType::NameplateType_Invalid };
 
     float m_smoothPercent{ 0.0f };
     float m_targetPercent{ 0.0f };
+
+    bool m_originalDisplayNameplateState;
 };
 
 } // namespace Ui

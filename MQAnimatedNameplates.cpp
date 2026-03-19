@@ -117,6 +117,27 @@ static bool CanSeeNameplate(PlayerClient* pSpawn)
     return CanSeeNameplate(targetPos);
 }
 
+static bool ShouldRenderNameplate(Ui::Nameplate* pNameplate)
+{
+    Ui::Config& config = Ui::Config::Get();
+
+    switch (pNameplate->GetNameplateType())
+    {
+    case Ui::NameplateType_Self:
+        return config.RenderForSelf;
+    case Ui::NameplateType_Group:
+        return config.RenderForGroup;
+    case Ui::NameplateType_Target:
+        return config.RenderForTarget;
+    case Ui::NameplateType_AutoHater:
+        return config.RenderForAllHaters;
+    case Ui::NameplateType_NPC:
+        return config.RenderForNPCs;
+    default:
+        return false;
+    }
+}
+
 static bool GetNameplatePositionFromSpawnPosition(PlayerClient* pSpawn, ImVec2& outCoords)
 {
     CCamera* camera = static_cast<eqlib::CCamera*>(pDisplay->pCamera);
@@ -232,13 +253,16 @@ Ui::HPBarStyle GetCategoryForSpawn(PlayerClient* pSpawn)
     return it->second.GetBarStyle();
 }
 
-static void DrawNameplate(Ui::Nameplate* pNameplate, bool alwaysVisible = false)
+static bool DrawNameplate(Ui::Nameplate* pNameplate, bool alwaysVisible = false)
 {
     if (!pDisplay)
-        return;
+        return false;
 
     if (!alwaysVisible && !CanSeeNameplate(pNameplate->GetSpawn()))
-        return;
+        return false;
+
+    if (!ShouldRenderNameplate(pNameplate))
+        return false;
 
     Ui::Config& config = Ui::Config::Get();
     const ImVec2 canvasSize(config.NameplateWidth, config.NameplateHeight);
@@ -247,9 +271,11 @@ static void DrawNameplate(Ui::Nameplate* pNameplate, bool alwaysVisible = false)
     ImVec2 targetNameplatePos;
 
     if (!GetNameplatePositionFromBones(pNameplate->GetSpawn(), targetNameplatePos, nameplateScale))
-        return;
+        return false;
 
     pNameplate->Render(targetNameplatePos, canvasSize, nameplateScale);
+
+    return true;
 }
 
 PLUGIN_API void InitializePlugin()
@@ -405,9 +431,10 @@ PLUGIN_API void OnUpdateImGui()
             });
         }
 
-        for (auto pNameplate : s_nameplatesToRenderByDistance)
+        for (auto* pNameplate : s_nameplatesToRenderByDistance)
         {
-            DrawNameplate(pNameplate);
+            if (!DrawNameplate(pNameplate))
+                pNameplate->ResetRenderNameSpriteState();
         }
 
         iam_set_lazy_init(lazy_init_enabled);

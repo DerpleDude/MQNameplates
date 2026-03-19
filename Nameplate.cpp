@@ -31,6 +31,7 @@ Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn)
     , m_pSpawn(pSpawn)
     , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
     , m_targetPercent(GetSpawnPercentHP() / 100.f)
+    , m_originalDisplayNameplateState(m_pSpawn->bDisplayNameSprite)
 {
 }
 
@@ -41,6 +42,7 @@ Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn,
     , m_pSpawn(pSpawn)
     , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
     , m_targetPercent(GetSpawnPercentHP() / 100.f)
+    , m_originalDisplayNameplateState(m_pSpawn->bDisplayNameSprite)
 {
     m_pTextureFrame = mq::CreateTexturePtr(textureFrame);
     m_pTextureBar = mq::CreateTexturePtr(textureBar);
@@ -51,10 +53,22 @@ ImDrawList* Nameplate::GetDrawList()
     return Ui::Config::Get().RenderToForeground ? ImGui::GetForegroundDrawList() : ImGui::GetBackgroundDrawList();
 }
 
+void Nameplate::ResetRenderNameSpriteState()
+{
+    if (m_pSpawn)
+    {
+        m_pSpawn->bDisplayNameSprite = m_originalDisplayNameplateState;
+    }
+}
+
 void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
 {
     // track the last render and clean up after 30s of non-usage.
     m_lastRenderTime = std::chrono::steady_clock::now();
+
+    // disable in-game nameplates.
+    m_pSpawn->bDisplayNameSprite = false;
+
     float percent = GetSpawnPercentHP();
 
     ImDrawList* drawList = Nameplate::GetDrawList();
@@ -99,13 +113,6 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
         scaledFameSize.y - padding.y * 2
     };
 
-    if (m_renderCount++ % 2 == 0)
-    {
-        m_lastPosition = center_pos;
-    }
-
-    center_pos = m_lastPosition;
-
     ImVec2 framePos = center_pos - (scaledFameSize / 2.0f);
     ImVec2 barPos   = center_pos - (barSize / 2.0f);
     ImVec2 topLeft  = framePos;
@@ -145,14 +152,14 @@ void Nameplate::Render(ImVec2& center_pos, const ImVec2& frameSize, float scale)
 
     // if we will render guild/purpose text, move the text up a line to make room.
     if ((config.ShowGuild && eqlib::pGuild && m_pSpawn->GuildID > 0)
-        || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NameplateType_NPC && m_pSpawn->Lastname[0]))
+        || (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0]))
     {
         //
         // Detail
         //
 
         std::string targetDetail;
-        if (config.ShowPurpose && GetSpawnType(m_pSpawn) == NameplateType_NPC && m_pSpawn->Lastname[0])
+        if (config.ShowPurpose && GetSpawnType(m_pSpawn) == NPC && m_pSpawn->Lastname[0])
         {
             targetDetail = fmt::format("({})", m_pSpawn->Lastname);
         }
@@ -584,8 +591,10 @@ Ui::HPBarStyle Nameplate::GetBarStyle() const
             return config.HPBarStyleHaters;
         case Ui::NameplateType::NameplateType_NPC:
             return config.HPBarStyleNPCs;
-            default:
-                return Ui::HPBarStyle_Invalid;
+        case Ui::NameplateType::NameplateType_Invalid:
+        //fall through
+        default:
+            return Ui::HPBarStyle_Invalid;
     }
 }   
 
