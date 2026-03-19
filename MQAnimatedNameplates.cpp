@@ -323,8 +323,6 @@ PLUGIN_API void OnUpdateImGui()
 
         Ui::Config& config = Ui::Config::Get();
 
-        char hpBarID[32];
-
         // reverse order so that nameplates get the highest prioirity ID
         if (config.RenderForNPCs)
         {
@@ -333,8 +331,7 @@ PLUGIN_API void OnUpdateImGui()
             {
                 if (GetSpawnType(pSpawn) == NPC)
                 {
-                    sprintf_s(hpBarID, "TargetHPBar_%d", pSpawn->SpawnID);
-                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn);
+                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, pSpawn);
                     if (inserted)
                     {
                         s_nameplatesToRenderByDistance.push_back(&it->second);
@@ -361,8 +358,7 @@ PLUGIN_API void OnUpdateImGui()
                     {
                         if (PlayerClient* pSpawn = GetSpawnByID(xts->SpawnID))
                         {
-                            sprintf_s(hpBarID, "TargetHPBar_%d", pSpawn->SpawnID);
-                            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, hpBarID, pSpawn);
+                            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, pSpawn);
                             if (inserted)
                             {
                                 s_nameplatesToRenderByDistance.push_back(&it->second);
@@ -381,8 +377,7 @@ PLUGIN_API void OnUpdateImGui()
             {
                 if (CGroupMember* pGroupMember = pLocalPC->pGroupInfo->GetGroupMember(i); pGroupMember && pGroupMember->GetPlayer())
                 {
-                    sprintf_s(hpBarID, "TargetHPBar_%d", pGroupMember->GetPlayer()->SpawnID);
-                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pGroupMember->GetPlayer()->SpawnID, hpBarID, pGroupMember->GetPlayer());
+                    auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pGroupMember->GetPlayer()->SpawnID, pGroupMember->GetPlayer());
                     if (inserted)
                     {
                         s_nameplatesToRenderByDistance.push_back(&it->second);
@@ -395,8 +390,7 @@ PLUGIN_API void OnUpdateImGui()
 
         if (config.RenderForTarget && pTarget)
         {
-            sprintf_s(hpBarID, "TargetHPBar_%d", pTarget->SpawnID);
-            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pTarget->SpawnID, hpBarID, pTarget);
+            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pTarget->SpawnID, pTarget);
             if (inserted)
             {
                 s_nameplatesToRenderByDistance.push_back(&it->second);
@@ -407,8 +401,7 @@ PLUGIN_API void OnUpdateImGui()
 
         if (config.RenderForSelf)
         {
-            sprintf_s(hpBarID, "TargetHPBar_%d", pLocalPlayer->SpawnID);
-            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pLocalPlayer->SpawnID, hpBarID, pLocalPlayer);
+            auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pLocalPlayer->SpawnID, pLocalPlayer);
             if (inserted)
             {
                 s_nameplatesToRenderByDistance.push_back(&it->second);
@@ -431,7 +424,7 @@ PLUGIN_API void OnUpdateImGui()
             });
         }
 
-        for (auto* pNameplate : s_nameplatesToRenderByDistance)
+        for (Ui::Nameplate* pNameplate : s_nameplatesToRenderByDistance)
         {
             if (!DrawNameplate(pNameplate))
                 pNameplate->ResetRenderNameSpriteState();

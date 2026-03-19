@@ -25,27 +25,16 @@ ImU32 ReduceAlpha(ImU32 col, float factor)
     return (col & 0x00FFFFFF) | (a << 24);
 }
 
-Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn)
-    : m_id(id)
-    , m_idHash(ImHashStr(id.c_str()))
+Nameplate::Nameplate(eqlib::PlayerClient* pSpawn, const mq::MQTexturePtr& textureFrame, const mq::MQTexturePtr& textureBar)
+    : m_id(fmt::format("Nameplate_{}", pSpawn->SpawnID))
+    , m_idHash(ImHashStr(m_id.c_str()))
     , m_pSpawn(pSpawn)
     , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
+    , m_pTextureFrame(textureFrame)
+    , m_pTextureBar(textureBar)
     , m_targetPercent(GetSpawnPercentHP() / 100.f)
     , m_originalDisplayNameplateState(m_pSpawn->bDisplayNameSprite)
 {
-}
-
-Nameplate::Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn,
-    const std::string& textureFrame, const std::string& textureBar)
-    : m_id(id)
-    , m_idHash(ImHashStr(id.c_str()))
-    , m_pSpawn(pSpawn)
-    , m_conColor(GetColorForChatColor(ConColor(pSpawn)))
-    , m_targetPercent(GetSpawnPercentHP() / 100.f)
-    , m_originalDisplayNameplateState(m_pSpawn->bDisplayNameSprite)
-{
-    m_pTextureFrame = mq::CreateTexturePtr(textureFrame);
-    m_pTextureBar = mq::CreateTexturePtr(textureBar);
 }
 
 ImDrawList* Nameplate::GetDrawList()

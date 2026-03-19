@@ -36,9 +36,9 @@ enum NameplateType
 class Nameplate
 {
 public:
-    Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn);
-    Nameplate(const std::string& id, eqlib::PlayerClient* pSpawn,
-        const std::string& textureFrame, const std::string& textureBar);
+    Nameplate(eqlib::PlayerClient* pSpawn,
+        const mq::MQTexturePtr& textureFrame = nullptr,
+        const mq::MQTexturePtr& textureBar = nullptr);
 
     ImDrawList* GetDrawList();
 
@@ -77,9 +77,6 @@ public:
   private:
     ImVec2 m_getTextPosition(TextPositioning location, const ImVec2& center_pos, const float lineWidth, const char* text, float& textWidthOut);
 
-    mq::MQTexturePtr m_pTextureFrame;
-    mq::MQTexturePtr m_pTextureBar;
-
     std::string m_id;
     ImGuiID m_idHash;
 
@@ -87,6 +84,9 @@ public:
     eqlib::PlayerClient* m_pSpawn;
     mq::MQColor m_conColor;
     Ui::NameplateType m_nameplateType{ Ui::NameplateType::NameplateType_Invalid };
+
+    mq::MQTexturePtr m_pTextureFrame;
+    mq::MQTexturePtr m_pTextureBar;
 
     float m_smoothPercent{ 0.0f };
     float m_targetPercent{ 0.0f };
