@@ -69,6 +69,23 @@ bool RenderOption(Ui::EnumConfigVariable<T>& variable, const char* labelText)
     return false;
 }
 
+template <typename T>
+bool RenderOption(Ui::ColorConfigVariable<T>& variable, const char* labelText)
+{
+    T value = variable.get();
+    ImVec4 color{ value.Red / 255.0f, value.Green / 255.0f, value.Blue / 255.0f, value.Alpha / 255.0f };
+    if (ImGui::ColorEdit3(labelText, (float*)&color, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
+    {
+        variable.set(color);
+        return true;
+    }
+    
+    ImGui::SameLine();
+    ImGui::Text(labelText);
+
+    return false;
+}
+
 class SettingsPanel
 {
 public:
@@ -103,6 +120,21 @@ public:
 
         ImGui::NewLine();
 
+        RenderOption(config.CustomColor1, "Custom Color 1");
+        RenderOption(config.CustomColor2, "Custom Color 2");
+        RenderOption(config.CustomColor3, "Custom Color 3");
+        RenderOption(config.CustomColor4, "Custom Color 4");
+        RenderOption(config.CustomColor5, "Custom Color 5");
+        RenderOption(config.CustomColor6, "Custom Color 6");
+        
+        ImGui::NewLine();
+        RenderOption(config.ColorAlphaModifier, "Color Alpha Modifier", 150, "%.2f");
+
+
+        ImGui::NewLine();
+        ImGui::Separator();
+        ImGui::NewLine();
+
         RenderOption(config.ShowClass, "Show Class");
         ImGui::Indent();
         RenderOption(config.ShortClassName, "Short Class Name");
@@ -117,7 +149,6 @@ public:
         ImGui::Separator();
         ImGui::NewLine();
         
-        RenderOption(config.ConColorAlphaModifier, "Con Color Alpha Modifier", 150, "%.2f");
         RenderOption(config.ScaleWithDistance, "Scale With Distance");
         RenderOption(config.DrawBarBorders, "Draw Bar Borders");
         

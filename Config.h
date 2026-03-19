@@ -2,6 +2,8 @@
 
 #include "ConfigVariable.h"
 
+#include "mq/base/Color.h"
+
 #include <string>
 
 namespace Ui {
@@ -9,10 +11,14 @@ namespace Ui {
 enum HPBarStyle
 {
     HPBarStyle_Invalid = -1,
-    HPBarStyle_SolidWhite,
-    HPBarStyle_SolidRed,
     HPBarStyle_ConColor,
     HPBarStyle_ColorRange,
+    HPBarStyle_Custom1,
+    HPBarStyle_Custom2,
+    HPBarStyle_Custom3,
+    HPBarStyle_Custom4,
+    HPBarStyle_Custom5,
+    HPBarStyle_Custom6,
 };
 
 template <>
@@ -21,10 +27,14 @@ struct config_enum_traits<HPBarStyle>
     static const std::vector<std::pair<HPBarStyle, std::string>>& values()
     {
         static std::vector<std::pair<HPBarStyle, std::string>> value_map = {
-            { HPBarStyle_SolidWhite, "White" },
-            { HPBarStyle_SolidRed, "Red" },
             { HPBarStyle_ConColor, "Con Color" },
-            { HPBarStyle_ColorRange, "Color Range" }
+            { HPBarStyle_ColorRange, "Color Range" },
+            { HPBarStyle_Custom1, "Custom 1" },
+            { HPBarStyle_Custom2, "Custom 2" },
+            { HPBarStyle_Custom3, "Custom 3" },
+            { HPBarStyle_Custom4, "Custom 4" },
+            { HPBarStyle_Custom5, "Custom 5" },
+            { HPBarStyle_Custom6, "Custom 6" },
         };
 
         return value_map;
@@ -75,7 +85,7 @@ public:
     ConfigVariable<bool> RenderTargetNoLOS{ m_container, "RenderTargetNoLOS", false };
     ConfigVariable<float> MaxDrawDistance{ m_container, "MaxDrawDistance", 200.0f, 100.0f, 1000.0f };
     ConfigVariable<bool> ScaleWithDistance{ m_container, "ScaleWithDistance", true };
-    ConfigVariable<float> ConColorAlphaModifier{ m_container, "ConColorAlphaModifier", 1.0f, 0.1f, 1.0f };
+    ConfigVariable<float> ColorAlphaModifier{ m_container, "ColorAlphaModifier", 1.0f, 0.1f, 1.0f };
 
     // Basic flags
     ConfigVariable<bool> ShowBuffIcons{ m_container, "ShowBuffIcons", true };
@@ -108,6 +118,13 @@ public:
     ConfigVariable<HPBarStyle> HPBarStyleTarget{ m_container, "HPBarStyleTarget", HPBarStyle_ColorRange };
     ConfigVariable<HPBarStyle> HPBarStyleHaters{ m_container, "HPBarStyleHaters", HPBarStyle_ColorRange };
     ConfigVariable<HPBarStyle> HPBarStyleNPCs{ m_container, "HPBarStyleNPCs", HPBarStyle_ColorRange };
+
+    ConfigVariable<mq::MQColor> CustomColor1{ m_container, "CustomColor1", mq::MQColor(255,255,255)};
+    ConfigVariable<mq::MQColor> CustomColor2{ m_container, "CustomColor2", mq::MQColor(255,255,255) };
+    ConfigVariable<mq::MQColor> CustomColor3{ m_container, "CustomColor3", mq::MQColor(255,255,255) };
+    ConfigVariable<mq::MQColor> CustomColor4{ m_container, "CustomColor4", mq::MQColor(255,255,255) };
+    ConfigVariable<mq::MQColor> CustomColor5{ m_container, "CustomColor5", mq::MQColor(255,255,255) };
+    ConfigVariable<mq::MQColor> CustomColor6{ m_container, "CustomColor6", mq::MQColor(255,255,255) };
 };
 
 } // namespace Ui

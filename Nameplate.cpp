@@ -363,8 +363,8 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     ImVec2 innerFillMax = fillMax - ImVec2(1, 1);
     ImVec2 innerFillMaxTarget = fillMaxTarget - ImVec2(1, 1);
 
-    ImU32 bgTop    = IM_COL32(28, 30, 41, 247 * config.ConColorAlphaModifier);
-    ImU32 bgBottom = IM_COL32(10, 13, 20, 247 * config.ConColorAlphaModifier);
+    ImU32 bgTop    = IM_COL32(28, 30, 41, 247 * config.ColorAlphaModifier);
+    ImU32 bgBottom = IM_COL32(10, 13, 20, 247 * config.ColorAlphaModifier);
 
     // Dark background
     AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, config.BarRounding, 0);
@@ -554,16 +554,32 @@ void Nameplate::GetNameplateColors(ImU32& lowOut, ImU32& midOut, ImU32& highOut,
 
     switch (style)
     {
-    case HPBarStyle_SolidRed:
-        lowOut = midOut = highOut = IM_COL32(204, 51, 51, 255 * config.ConColorAlphaModifier);
+    case HPBarStyle_Custom1:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor1.get().ToImU32(), config.ColorAlphaModifier);
         highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
         break;
-    case HPBarStyle_SolidWhite:
-        lowOut = midOut = highOut = IM_COL32(255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier, 255 * config.ConColorAlphaModifier);
+    case HPBarStyle_Custom2:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor2.get().ToImU32(), config.ColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_Custom3:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor3.get().ToImU32(), config.ColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_Custom4:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor4.get().ToImU32(), config.ColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_Custom5:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor5.get().ToImU32(), config.ColorAlphaModifier);
+        highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
+        break;
+    case HPBarStyle_Custom6:
+        lowOut = midOut = highOut = ReduceAlpha(config.CustomColor6.get().ToImU32(), config.ColorAlphaModifier);
         highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
         break;
     case HPBarStyle_ConColor:
-        lowOut = midOut = highOut = ReduceAlpha(m_conColor.ToImU32(), config.ConColorAlphaModifier);
+        lowOut = midOut = highOut = ReduceAlpha(m_conColor.ToImU32(), config.ColorAlphaModifier);
         highlightOut = currentTarget ? IM_COL32(255, 128, 0, 255) : IM_COL32(240, 80, 240, 255);
         break;
     case HPBarStyle_ColorRange:

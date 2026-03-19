@@ -2,10 +2,13 @@
 #pragma once
 
 #include "yaml-cpp/yaml.h"
+#include "mq/base/Color.h"
 
 #include <concepts>
 #include <string>
 #include <vector>
+
+#include "MQ2Heals/Options.h"
 
 namespace Ui {
 
@@ -135,7 +138,11 @@ public:
 
     virtual void Store(YAML::Node& yamlNode) const override
     {
-        if constexpr (!std::is_enum_v<T>)
+        if constexpr (std::is_same_v<T, mq::MQColor>)
+        {
+            yamlNode[m_key] = fmt::format("#{:06x}", m_value.ToARGB() & 0x00FFFFFF);
+        }
+        else if constexpr (!std::is_enum_v<T> && !std::is_same_v<T, mq::MQColor>)
         {
             yamlNode[m_key] = m_value;
         }
@@ -151,7 +158,11 @@ public:
         {
             try
             {
-                if constexpr (!std::is_enum_v<T>)
+                if constexpr (std::is_same_v<T, mq::MQColor>)
+                {
+                    set_internal(mq::MQColor(node.as<std::string>(std::string()).c_str()));
+                }
+                else if constexpr (!std::is_enum_v<T> )
                 {
                     set_internal(node.as<T>());
                 }
@@ -159,6 +170,9 @@ public:
                 {
                     set_internal(static_cast<T>(node.as<std::underlying_type_t<T>>()));
                 }
+            }
+            catch (mq::detail::InvalidHexChar)
+            {
             }
             catch (const YAML::BadConversion&)
             {
@@ -243,6 +257,13 @@ protected:
 };
 
 template <typename T>
+class ColorConfigVariable : public BasicConfigVariable<T>
+{
+public:
+    using BasicConfigVariable<T>::BasicConfigVariable;
+};
+
+template <typename T>
 class ConfigVariable;
 
 template <typename T> requires (std::is_integral_v<T> || std::is_floating_point_v<T>) && (!std::is_same_v<T, bool>)
@@ -261,6 +282,12 @@ template <typename T> requires std::is_enum_v<T>
 class ConfigVariable<T> : public EnumConfigVariable<T>
 {
     using EnumConfigVariable<T>::EnumConfigVariable;
+};
+
+template <typename T> requires std::is_same_v<T, mq::MQColor>
+class ConfigVariable<T> : public ColorConfigVariable<T>
+{
+    using ColorConfigVariable<T>::ColorConfigVariable;
 };
 
 } // namespace Ui
