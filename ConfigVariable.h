@@ -7,8 +7,7 @@
 #include <concepts>
 #include <string>
 #include <vector>
-
-#include "MQ2Heals/Options.h"
+#include <fmt/format.h>
 
 namespace Ui {
 
