@@ -106,6 +106,11 @@ public:
         tabs.emplace_back(1, "Look and Feel", [this]() { DrawLookAndFeelTab(); });
         tabs.emplace_back(2, "Size and Positioning", [this]() { DrawSizeAndPositioningTab(); });
         tabs.emplace_back(3, "Dev and Debug", [this]() { DrawDevAndDebugTab(); });
+
+        Ui::Config& config = Ui::Config::Get();
+
+        config.TestGroups.emplace_back(config.GetContainer(), "TestGroup1");
+        config.TestGroups.emplace_back(config.GetContainer(), "TestGroup1");
     }
 
     void DrawTargetingTab()
@@ -222,8 +227,15 @@ public:
 
         ImGui::Text("Test Settings Groups");
 
-        RenderTestGroup(config.TestGroup1);
-        RenderTestGroup(config.TestGroup2);
+        for (Ui::TestConfigGroup& group : config.TestGroups)
+        {
+            RenderTestGroup(group);
+        }
+
+        if (ImGui::Button("Add New Group"))
+        {
+            config.TestGroups.emplace_back(config.GetContainer(), fmt::format("TestGroup{}", config.TestGroups.size() + 1));
+        }
     }
 
     std::vector<Ui::AnimatedTabState> tabs;

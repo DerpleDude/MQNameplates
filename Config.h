@@ -68,6 +68,8 @@ public:
     void SaveSettings();
     void LoadSettings();
 
+    ConfigContainer& GetContainer() { return m_container; }
+
 private:
     std::string m_configFile;
 
@@ -142,8 +144,7 @@ public:
     ConfigVariable<mq::MQColor> CustomColor6{ m_container, "CustomColor6", mq::MQColor(255,255,255) };
 
     // Testing
-    TestConfigGroup TestGroup1{ m_container, "TestGroup1" };
-    TestConfigGroup TestGroup2{ m_container, "TestGroup2" };
+    std::vector<TestConfigGroup> TestGroups;
 };
 
 } // namespace Ui
