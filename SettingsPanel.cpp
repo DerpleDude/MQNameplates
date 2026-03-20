@@ -180,9 +180,11 @@ public:
         Ui::Config& config = Ui::Config::Get();
 
         RenderOption(config.RenderForSelf, "Show For Self");
+        RenderOption(config.RenderForTarget, "Show For Target");
+
         RenderOption(config.RenderForGroup, "Show For Group");
         RenderOption(config.RenderForPCs, "Show For All PCs");
-        RenderOption(config.RenderForTarget, "Show For Target");
+        
         RenderOption(config.RenderForAllHaters, "Show For All Haters");
         RenderOption(config.RenderForNPCs, "Show For All NPCs");
     }
