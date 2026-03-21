@@ -208,8 +208,17 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     //
     // Name Text
     //
+    char displayName[256];
+    if (m_pSpawn->HideMode)
+    {
+        snprintf(displayName, sizeof(displayName), "(%s)", m_pSpawn->DisplayedName);
+    }
+    else
+    {
+        snprintf(displayName, sizeof(displayName), "%s", m_pSpawn->DisplayedName);
+    }
 
-    RenderNameplateText(nameTextPos, textColor, m_pSpawn->DisplayedName);
+    RenderNameplateText(nameTextPos, textColor, displayName);
     topLeft = nameTextPos;
 
     //
