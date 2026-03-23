@@ -124,15 +124,17 @@ static bool ShouldRenderNameplate(Ui::Nameplate* pNameplate)
     switch (pNameplate->GetNameplateType())
     {
     case Ui::NameplateType_Self:
-        return config.RenderForSelf;
+        return config.SelfNameplateOptions.Render;
     case Ui::NameplateType_Group:
-        return config.RenderForGroup;
+        return config.GroupNameplateOptions.Render;
     case Ui::NameplateType_Target:
-        return config.RenderForTarget;
+        return config.TargetNameplateOptions.Render;
     case Ui::NameplateType_AutoHater:
-        return config.RenderForAllHaters;
+        return config.HatersNameplateOptions.Render;
     case Ui::NameplateType_NPC:
-        return config.RenderForNPCs;
+        return config.NPCNameplateOptions.Render;
+    case Ui::NameplateType_PC:
+        return config.PCNameplateOptions.Render;
     default:
         return false;
     }
@@ -236,7 +238,7 @@ static bool DrawNameplate(Ui::Nameplate* pNameplate, bool alwaysVisible = false)
         return false;
 
     auto* pNameplateConfig = pNameplate->GetConfig();
-    const ImVec2 canvasSize(pNameplateConfig->NameplateWidth, pNameplateConfig->NameplateHeight);
+    const ImVec2 canvasSize(pNameplateConfig->GetStyle().NameplateWidth, pNameplateConfig->GetStyle().NameplateHeight);
 
     float nameplateScale = 1.0f;
     ImVec2 targetNameplatePos;
@@ -295,13 +297,13 @@ PLUGIN_API void OnUpdateImGui()
         Ui::Config& config = Ui::Config::Get();
 
         // reverse order so that nameplates get the highest prioirity ID
-        if (config.RenderForNPCs || config.RenderForPCs)
+        if (config.NPCNameplateOptions.Render || config.PCNameplateOptions.Render)
         {
             PlayerClient* pSpawn = pSpawnManager->FirstSpawn;
             while (pSpawn)
             {
-                if ((config.RenderForNPCs && GetSpawnType(pSpawn) == NPC) 
-                    || (config.RenderForPCs && GetSpawnType(pSpawn) == PC))
+                if ((config.NPCNameplateOptions.Render && GetSpawnType(pSpawn) == NPC) 
+                    || (config.PCNameplateOptions.Render && GetSpawnType(pSpawn) == PC))
                 {
                     auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pSpawn->SpawnID, pSpawn);
                     if (inserted)
@@ -316,7 +318,7 @@ PLUGIN_API void OnUpdateImGui()
             }
         }
 
-        if (config.RenderForAllHaters)
+        if (config.HatersNameplateOptions.Render)
         {
             if (pLocalPC)
             {
@@ -343,7 +345,7 @@ PLUGIN_API void OnUpdateImGui()
             }
         }
 
-        if (config.RenderForGroup && pLocalPC->pGroupInfo)
+        if (config.GroupNameplateOptions.Render && pLocalPC->pGroupInfo)
         {
             for (int i = 0; i < MAX_GROUP_SIZE; i++)
             {
@@ -360,7 +362,7 @@ PLUGIN_API void OnUpdateImGui()
             }
         }
 
-        if (config.RenderForTarget && pTarget)
+        if (config.TargetNameplateOptions.Render && pTarget)
         {
             auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pTarget->SpawnID, pTarget);
             if (inserted)
@@ -371,7 +373,7 @@ PLUGIN_API void OnUpdateImGui()
             it->second.SetNameplateType(Ui::NameplateType_Target);
         }
 
-        if (config.RenderForSelf)
+        if (config.SelfNameplateOptions.Render)
         {
             auto [it, inserted] = s_nameplatesBySpawnId.try_emplace(pLocalPlayer->SpawnID, pLocalPlayer);
             if (inserted)

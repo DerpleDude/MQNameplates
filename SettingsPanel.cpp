@@ -1,7 +1,6 @@
 #include "SettingsPanel.h"
 #include "Config.h"
 #include "Widgets.h"
-#include "Nameplate.h"
 
 #include "imgui/ImGuiUtils.h"
 #include "imgui/imgui_internal.h"
@@ -15,7 +14,7 @@ using namespace eqlib;
 
 static const ImGuiID x_id = ImHashStr("x");
 static const ImGuiID w_id = ImHashStr("w");
-
+static std::vector<std::string> s_NameplateStyleLabels;
 
 template <typename T> requires std::is_floating_point_v<T>
 bool RenderOption(Ui::NumericConfigVariable<T>& variable, const char* labelText, float width = 0.0f, const char* format = "%.2f")
@@ -85,6 +84,36 @@ bool RenderOption(Ui::ConfigVariable<T>& variable, const char* labelText)
     return false;
 }
 
+bool RenderVectorDropdown(Ui::ConfigVariable<uint32_t>& variable, const char* label, const std::vector<std::string>& options)
+{
+    int currentIndex = variable.get();
+    if (Ui::AnimatedCombo(label, &currentIndex, options))
+    {
+        variable.set(currentIndex);
+        return true;
+    }
+    
+    return false;
+}
+
+void ResolveNameplateLabels()
+{
+    // setup the new vector of labels
+    s_NameplateStyleLabels.clear();
+    for (auto& style : Ui::Config::Get().NameplateStyles)
+    {
+        s_NameplateStyleLabels.push_back(style.getKey());
+    }
+
+    // validate all nameplates for valid indexes and reset to 0 if invalid
+    Ui::Config& config = Ui::Config::Get();
+    for (auto* nameplateOptions : { &config.TargetNameplateOptions, &config.SelfNameplateOptions, &config.GroupNameplateOptions, &config.HatersNameplateOptions, &config.NPCNameplateOptions, &config.PCNameplateOptions })
+    {
+        if (nameplateOptions->NameplateConfigStyle.get() >= s_NameplateStyleLabels.size())
+            nameplateOptions->NameplateConfigStyle.set(0);
+    }
+}
+
 void RenderTestGroup(Ui::TestConfigGroup& group)
 {
     ImGui::PushID(&group);
@@ -99,12 +128,30 @@ void RenderTestGroup(Ui::TestConfigGroup& group)
 
 void RenderNameplateConfigGroup(Ui::NameplateConfigGroup& group, const char* label)
 {
+    if (s_NameplateStyleLabels.empty())
+        ResolveNameplateLabels();
+
+    ImGui::PushID(&group);
+    if (ImGui::CollapsingHeader(label))
+    {
+        ImGui::Indent();
+        RenderOption(group.Render, "Render Nameplate");
+        RenderVectorDropdown(group.NameplateConfigStyle, "Nameplate Config Style", s_NameplateStyleLabels);
+        ImGui::Unindent();
+    }
+    ImGui::PopID();
+}
+
+void RenderNameplateStyleConfigGroup(Ui::NameplateStyleConfigGroup& group, const char* label)
+{
     ImGui::PushID(&group);
     if (ImGui::CollapsingHeader(label))
     {
         ImGui::Indent();
         float sliderLabelWidth = 150;
         RenderOption(group.HPBarStyle, "HP Bar Style");
+        if (group.HPBarStyle.get() == Ui::HPBarStyle_Custom)
+            RenderOption(group.CustomColor, "Custom Color");
         
         ImGui::NewLine();
         ImGui::SeparatorText("Additional Info");
@@ -159,34 +206,33 @@ void RenderNameplateConfigGroup(Ui::NameplateConfigGroup& group, const char* lab
     ImGui::PopID();
 }
 
+Ui::NameplateStyleConfigGroup& Ui::NameplateConfigGroup::GetStyle()
+{
+    // lazy init default.
+    if (Config::Get().NameplateStyles.empty())
+    {
+        // ensure there's always at least one style to reference
+        Config::Get().NameplateStyles.emplace_back(Config::Get().GetContainer(), "Nameplate Style Default");
+        ResolveNameplateLabels();
+    }
+
+    if (NameplateConfigStyle.get() >= Config::Get().NameplateStyles.size())
+    {
+        NameplateConfigStyle.set(0);
+    }
+
+    return Config::Get().NameplateStyles[NameplateConfigStyle.get()];
+}
+
 class SettingsPanel
 {
 public:
     SettingsPanel()
     {
-        tabs.emplace_back(0, "Targeting", [this]() { DrawTargetingTab(); });
-        tabs.emplace_back(1, "Look and Feel", [this]() { DrawLookAndFeelTab(); });
+        tabs.emplace_back(0, "Look and Feel", [this]() { DrawLookAndFeelTab(); });
+        tabs.emplace_back(1, "Sytle Editor", [this]() { DrawStyleEditorTab(); });
         tabs.emplace_back(2, "Rendering Options", [this]() { DrawRenderingOptionsTab(); });
         tabs.emplace_back(3, "Dev and Debug", [this]() { DrawDevAndDebugTab(); });
-
-        Ui::Config& config = Ui::Config::Get();
-
-        config.TestGroups.emplace_back(config.GetContainer(), "TestGroup1");
-        config.TestGroups.emplace_back(config.GetContainer(), "TestGroup1");
-    }
-
-    void DrawTargetingTab()
-    {
-        Ui::Config& config = Ui::Config::Get();
-
-        RenderOption(config.RenderForSelf, "Show For Self");
-        RenderOption(config.RenderForTarget, "Show For Target");
-
-        RenderOption(config.RenderForGroup, "Show For Group");
-        RenderOption(config.RenderForPCs, "Show For All PCs");
-        
-        RenderOption(config.RenderForAllHaters, "Show For All Haters");
-        RenderOption(config.RenderForNPCs, "Show For All NPCs");
     }
 
     void DrawLookAndFeelTab()
@@ -206,20 +252,6 @@ public:
         RenderOption(config.ColorRangeLow, "Color Low");
         RenderOption(config.ColorRangeMid, "Color Mid");
         RenderOption(config.ColorRangeHigh, "Color High");
-
-        ImGui::NewLine();
-        ImGui::SeparatorText("Custom Colors");
-        ImGui::NewLine();
-
-        RenderOption(config.CustomColor1, "Custom Color 1");
-        RenderOption(config.CustomColor2, "Custom Color 2");
-        RenderOption(config.CustomColor3, "Custom Color 3");
-        RenderOption(config.CustomColor4, "Custom Color 4");
-        RenderOption(config.CustomColor5, "Custom Color 5");
-        RenderOption(config.CustomColor6, "Custom Color 6");
-        
-        ImGui::NewLine();
-
 
         ImGui::NewLine();
         ImGui::SeparatorText("Global Options");
@@ -246,6 +278,22 @@ public:
         ImGui::NewLine();
 
         RenderOption(config.ScaleWithDistance, "Scale With Distance");
+    }
+
+    void DrawStyleEditorTab()
+    {
+        Ui::Config& config = Ui::Config::Get();
+
+        for (Ui::NameplateStyleConfigGroup& style : config.NameplateStyles)
+        {
+            RenderNameplateStyleConfigGroup(style, style.getKey().c_str());
+        }
+
+        if (ImGui::Button("Add New Style"))
+        {
+            config.NameplateStyles.emplace_back(config.GetContainer(), fmt::format("Nameplate Style {}", config.NameplateStyles.size()));
+            ResolveNameplateLabels();
+        }
     }
 
     void DrawDevAndDebugTab()

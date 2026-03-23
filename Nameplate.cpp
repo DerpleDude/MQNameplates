@@ -79,7 +79,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
         g_maskedImage3.RenderNineSlice(drawList, testBarPos, testBarPos + ImVec2{ 512, 64 }, ImVec2{ 42,42 }, margins);
     }
 
-    float finalScale = std::clamp((config.ScaleWithDistance ? (1.0f/scale) : 1.0f) * m_pConfigGroup->ScaleFactor, m_pConfigGroup->MaxCalculatedScaleFactor.getMinValue(), m_pConfigGroup->MaxCalculatedScaleFactor.get());
+    float finalScale = std::clamp((config.ScaleWithDistance ? (1.0f/scale) : 1.0f) * m_pConfigGroup->GetStyle().ScaleFactor, m_pConfigGroup->GetStyle().MaxCalculatedScaleFactor.getMinValue(), m_pConfigGroup->GetStyle().MaxCalculatedScaleFactor.get());
 
     float targetScale = 1.0f;
     if (IsCurrentTarget())
@@ -95,7 +95,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
 
     ImVec2 scaledFameSize = frameSize * ImVec2(finalScale, finalScale);
 
-    ImGui::PushFont(nullptr, m_pConfigGroup->FontSize );
+    ImGui::PushFont(nullptr, m_pConfigGroup->GetStyle().FontSize );
 
     const ImVec2 padding = ImGui::GetStyle().FramePadding;
     const ImVec2 barSize{
@@ -103,7 +103,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
         scaledFameSize.y - padding.y * 2
     };
 
-    ImVec2 offset_center_pos = center_pos + ImVec2{ 0, m_pConfigGroup->NameplateHeightOffset };
+    ImVec2 offset_center_pos = center_pos + ImVec2{ 0, m_pConfigGroup->GetStyle().NameplateHeightOffset };
 
     ImVec2 framePos = offset_center_pos - (scaledFameSize / 2.0f);
     ImVec2 barPos   = offset_center_pos - (barSize / 2.0f);
@@ -191,13 +191,13 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     //
     // Class
     //
-    if (m_pConfigGroup->ShowClass)
+    if (m_pConfigGroup->GetStyle().ShowClass)
     {
         std::string classInfo;
 
         if (m_pSpawn->GetClass() < 1 || m_pSpawn->GetClass() > 16)
             classInfo = "???";
-        else if (m_pConfigGroup->ShortClassName)
+        else if (m_pConfigGroup->GetStyle().ShortClassName)
             classInfo = pEverQuest->GetClassThreeLetterCode(m_pSpawn->GetClass());
         else
             classInfo = GetClassDesc(m_pSpawn->GetClass());
@@ -225,7 +225,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     // Level
     //
 
-    if (m_pConfigGroup->ShowLevel)
+    if (m_pConfigGroup->GetStyle().ShowLevel)
         RenderNameplateText(levelTextPos, textColor, targetLevel.c_str());
 
     //
@@ -235,13 +235,13 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
     // only render for target.
     if (config.ShowBuffIcons && pTarget == m_pSpawn)
     {
-        int buffsPerRow = std::max(1, static_cast<int>(floorf(scaledFameSize.x / (m_pConfigGroup->IconSize + padding.x))));
+        int buffsPerRow = std::max(1, static_cast<int>(floorf(scaledFameSize.x / (m_pConfigGroup->GetStyle().IconSize + padding.x))));
 
         int buffCount = config.ShowBuffIcons ? GetCachedBuffCount(m_pSpawn) : 0;
 
         float numBuffRows = ceilf(buffCount / static_cast<float>(buffsPerRow));
 
-        float verticalOffset = numBuffRows * (m_pConfigGroup->IconSize + padding.y);
+        float verticalOffset = numBuffRows * (m_pConfigGroup->GetStyle().IconSize + padding.y);
 
         ImVec2 buffPos = topLeft - ImVec2(0, verticalOffset);
         float buffPosXStart = buffPos.x;
@@ -264,11 +264,11 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
                     if ((iconsDrawn) % buffsPerRow == 0)
                     {
                         buffPos.x = buffPosXStart;
-                        buffPos.y += m_pConfigGroup->IconSize + padding.y;
+                        buffPos.y += m_pConfigGroup->GetStyle().IconSize + padding.y;
                     }
                     else
                     {
-                        buffPos.x += m_pConfigGroup->IconSize + padding.x;
+                        buffPos.x += m_pConfigGroup->GetStyle().IconSize + padding.x;
                     }
                 }
             }
@@ -278,7 +278,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
 
     ImGui::PopFont();
 
-    if (IsCurrentTarget() && m_pConfigGroup->ShowTargetIndicator)
+    if (IsCurrentTarget() && m_pConfigGroup->GetStyle().ShowTargetIndicator)
     {
         /*
         // draw some wings or something if this is our target.
@@ -297,8 +297,8 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
         
         //ImVec4 oscColor = iam_oscillate_color(m_idHash, color, colorAmp, 2.0f, iam_wave_sine, 0.0f, iam_col_srgb, dt);
         */
-        ImVec2 baseOffset{ m_pConfigGroup->TargetIndicatorPadding, m_pConfigGroup->TargetIndicatorPadding };
-        int alphaOsc = 80 + iam_oscillate_int(m_idHash, 40, m_pConfigGroup->TargetIndicatorBlinkSpeed, iam_wave_sine, 0.0f, dt);
+        ImVec2 baseOffset{ m_pConfigGroup->GetStyle().TargetIndicatorPadding, m_pConfigGroup->GetStyle().TargetIndicatorPadding };
+        int alphaOsc = 80 + iam_oscillate_int(m_idHash, 40, m_pConfigGroup->GetStyle().TargetIndicatorBlinkSpeed, iam_wave_sine, 0.0f, dt);
         drawList->AddRect(topLeft - baseOffset, botRight + baseOffset, ReduceAlpha(m_conColor.ToImU32(), alphaOsc / 255.0f), 4.0f, 0, 2.0f);
     }
     
@@ -348,14 +348,14 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
     ImVec2 innerFillMax = fillMax - ImVec2(1, 1);
     ImVec2 innerFillMaxTarget = fillMaxTarget - ImVec2(1, 1);
 
-    ImU32 bgTop    = IM_COL32(28, 30, 41, 247 * m_pConfigGroup->ColorAlphaModifier);
-    ImU32 bgBottom = IM_COL32(10, 13, 20, 247 * m_pConfigGroup->ColorAlphaModifier);
+    ImU32 bgTop    = IM_COL32(28, 30, 41, 247 * m_pConfigGroup->GetStyle().ColorAlphaModifier);
+    ImU32 bgBottom = IM_COL32(10, 13, 20, 247 * m_pConfigGroup->GetStyle().ColorAlphaModifier);
 
     // Dark background
-    AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, m_pConfigGroup->BarRounding, 0);
+    AddRectFilledMultiColorRounded(innerMin, innerMax, bgTop, bgTop, bgBottom, bgBottom, m_pConfigGroup->GetStyle().BarRounding, 0);
 
     drawList->AddRectFilled(innerMin, ImVec2(max.x - 1, min.y + std::max(2.0f, barH * 0.35f)),
-        IM_COL32(255, 255, 255, 14), m_pConfigGroup->BarRounding);
+        IM_COL32(255, 255, 255, 14), m_pConfigGroup->GetStyle().BarRounding);
 
     if (fillWidth > 0)
     {
@@ -384,7 +384,7 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
         ImU32 bottomLeft = topLeft;
         ImU32 bottomRight = topRight;
 
-        float fillRounding = std::min({ m_pConfigGroup->BarRounding.get(), barH * 0.5f, fillWidth * 0.5f });
+        float fillRounding = std::min({ m_pConfigGroup->GetStyle().BarRounding.get(), barH * 0.5f, fillWidth * 0.5f });
         
         if (fillMax.x > innerMin.x && fillMax.y > innerMin.y)
         {
@@ -392,15 +392,15 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
             if (m_smoothPercent > m_targetPercent)
             {
                 // moving down
-                AddRectFilledMultiColorRounded(innerMin, innerFillMax, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight,0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft,0.5f), m_pConfigGroup->BarRounding, 0);
-                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, topLeft, topRight, bottomRight, bottomLeft, m_pConfigGroup->BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, innerFillMax, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight,0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft,0.5f), m_pConfigGroup->GetStyle().BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, topLeft, topRight, bottomRight, bottomLeft, m_pConfigGroup->GetStyle().BarRounding, 0);
                     
             }
             else
             {
                 // moving up
-                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight, 0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft, 0.5f), m_pConfigGroup->BarRounding, 0);
-                AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, m_pConfigGroup->BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, innerFillMaxTarget, ReduceAlpha(topLeft, 0.5f), ReduceAlpha(topRight, 0.5f), ReduceAlpha(bottomRight, 0.5f), ReduceAlpha(bottomLeft, 0.5f), m_pConfigGroup->GetStyle().BarRounding, 0);
+                AddRectFilledMultiColorRounded(innerMin, innerFillMax, topLeft, topRight, bottomRight, bottomLeft, m_pConfigGroup->GetStyle().BarRounding, 0);
             }
 
             float glossMaxY = std::min(innerFillMax.y, min.y + std::max(2.0f, barH * 0.45f));
@@ -410,7 +410,7 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
                 AddRectFilledMultiColorRounded(innerMin, ImVec2(innerFillMax.x, glossMaxY),
                     IM_COL32(255, 255, 255, 14), IM_COL32(255, 255, 255, 8),
                     IM_COL32(255, 255, 255, 2), IM_COL32(255, 255, 255, 8),
-                    m_pConfigGroup->BarRounding, 0);
+                    m_pConfigGroup->GetStyle().BarRounding, 0);
             }
         }
         else
@@ -419,7 +419,7 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
         }
     }
 
-    int hpTicks = 100 / m_pConfigGroup->HPTicks;
+    int hpTicks = 100 / m_pConfigGroup->GetStyle().HPTicks;
 
     for (int i = 1; i < hpTicks; ++i)
     {
@@ -432,8 +432,8 @@ void Nameplate::RenderAnimatedPercentageBar(const ImVec2& center_pos, const ImVe
             IM_COL32(255, 255, 255, static_cast<int>((reached ? 0.3 : 0.15) * 255)), 1.0f);
     }
 
-    if (m_pConfigGroup->DrawBarBorders)
-        drawList->AddRect(min, max, m_pConfigGroup->BarBordersColor.get().ToImU32(), m_pConfigGroup->BarRounding, 0, m_pConfigGroup->BarBorderThickness);
+    if (m_pConfigGroup->GetStyle().DrawBarBorders)
+        drawList->AddRect(min, max, m_pConfigGroup->GetStyle().BarBordersColor.get().ToImU32(), m_pConfigGroup->GetStyle().BarRounding, 0, m_pConfigGroup->GetStyle().BarBorderThickness);
 
     std::string text = std::to_string(static_cast<int>(std::floor((m_targetPercent*100.f) + 0.5f))) + "%";
 
@@ -469,7 +469,7 @@ void Nameplate::RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 colo
 
 void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell)
 {
-    ImVec2 size(m_pConfigGroup->IconSize, m_pConfigGroup->IconSize);
+    ImVec2 size(m_pConfigGroup->GetStyle().IconSize, m_pConfigGroup->GetStyle().IconSize);
     ImVec2 max(pos + size);
 
     ImDrawList* drawList = Nameplate::GetDrawList();
@@ -531,29 +531,14 @@ void Nameplate::GetNameplateColors(ImU32& lowOut, ImU32& midOut, ImU32& highOut)
     Ui::Config& config = Ui::Config::Get();
 
     bool currentTarget = IsCurrentTarget();
-    lowOut = ReduceAlpha(config.ColorRangeLow.get().ToImU32(), m_pConfigGroup->ColorAlphaModifier);
-    midOut = ReduceAlpha(config.ColorRangeMid.get().ToImU32(), m_pConfigGroup->ColorAlphaModifier);
-    highOut = ReduceAlpha(config.ColorRangeHigh.get().ToImU32(), m_pConfigGroup->ColorAlphaModifier);
+    lowOut = ReduceAlpha(config.ColorRangeLow.get().ToImU32(), m_pConfigGroup->GetStyle().ColorAlphaModifier);
+    midOut = ReduceAlpha(config.ColorRangeMid.get().ToImU32(), m_pConfigGroup->GetStyle().ColorAlphaModifier);
+    highOut = ReduceAlpha(config.ColorRangeHigh.get().ToImU32(), m_pConfigGroup->GetStyle().ColorAlphaModifier);
 
-    switch (m_pConfigGroup->HPBarStyle)
+    switch (m_pConfigGroup->GetStyle().HPBarStyle)
     {
-    case HPBarStyle_Custom1:
-        lowOut = midOut = highOut = config.CustomColor1.get().ToImU32();
-        break;
-    case HPBarStyle_Custom2:
-        lowOut = midOut = highOut = config.CustomColor2.get().ToImU32();
-        break;
-    case HPBarStyle_Custom3:
-        lowOut = midOut = highOut = config.CustomColor3.get().ToImU32();
-        break;
-    case HPBarStyle_Custom4:
-        lowOut = midOut = highOut = config.CustomColor4.get().ToImU32();
-        break;
-    case HPBarStyle_Custom5:
-        lowOut = midOut = highOut = config.CustomColor5.get().ToImU32();
-        break;
-    case HPBarStyle_Custom6:
-        lowOut = midOut = highOut = config.CustomColor6.get().ToImU32();
+    case HPBarStyle_Custom:
+        lowOut = midOut = highOut = m_pConfigGroup->GetStyle().CustomColor.get().ToImU32();
         break;
     case HPBarStyle_ConColor:
         lowOut = midOut = highOut = m_conColor.ToImU32();
@@ -563,9 +548,9 @@ void Nameplate::GetNameplateColors(ImU32& lowOut, ImU32& midOut, ImU32& highOut)
     default: break;
     }
 
-    lowOut = ReduceAlpha(lowOut,m_pConfigGroup->ColorAlphaModifier);
-    midOut = ReduceAlpha(midOut, m_pConfigGroup->ColorAlphaModifier);
-    highOut = ReduceAlpha(highOut, m_pConfigGroup->ColorAlphaModifier);
+    lowOut = ReduceAlpha(lowOut,m_pConfigGroup->GetStyle().ColorAlphaModifier);
+    midOut = ReduceAlpha(midOut, m_pConfigGroup->GetStyle().ColorAlphaModifier);
+    highOut = ReduceAlpha(highOut, m_pConfigGroup->GetStyle().ColorAlphaModifier);
 } 
 
 void Nameplate::SetNameplateType(Ui::NameplateType type)

@@ -13,12 +13,7 @@ enum HPBarStyle
     HPBarStyle_Invalid = -1,
     HPBarStyle_ConColor,
     HPBarStyle_ColorRange,
-    HPBarStyle_Custom1,
-    HPBarStyle_Custom2,
-    HPBarStyle_Custom3,
-    HPBarStyle_Custom4,
-    HPBarStyle_Custom5,
-    HPBarStyle_Custom6,
+    HPBarStyle_Custom,
 };
 
 enum NameplateType
@@ -41,12 +36,7 @@ struct config_enum_traits<HPBarStyle>
         static std::vector<std::pair<HPBarStyle, std::string>> value_map = {
             { HPBarStyle_ConColor, "Con Color" },
             { HPBarStyle_ColorRange, "Color Range" },
-            { HPBarStyle_Custom1, "Custom 1" },
-            { HPBarStyle_Custom2, "Custom 2" },
-            { HPBarStyle_Custom3, "Custom 3" },
-            { HPBarStyle_Custom4, "Custom 4" },
-            { HPBarStyle_Custom5, "Custom 5" },
-            { HPBarStyle_Custom6, "Custom 6" },
+            { HPBarStyle_Custom, "Custom Color" },
         };
 
         return value_map;
@@ -67,15 +57,17 @@ public:
     ConfigVariable<mq::MQColor> TestColor{ *this, "TestColor", mq::MQColor(255,255,255) };
 };
 
-class NameplateConfigGroup : public ConfigGroup
+class NameplateStyleConfigGroup : public ConfigGroup
 {
 public:
-    NameplateConfigGroup(ConfigContainer& container, std::string name)
+    NameplateStyleConfigGroup(ConfigContainer& container, std::string name)
         : ConfigGroup(container, std::move(name))
     {
     }
 
     ConfigVariable<HPBarStyle> HPBarStyle{ *this, "HPBarStyle", HPBarStyle_ColorRange };
+    ConfigVariable<mq::MQColor> CustomColor{ *this, "Custom Color", mq::MQColor{ 255,255,255,255} };
+
     ConfigVariable<bool> ShowLevel{ *this, "ShowLevel", true };
     ConfigVariable<bool> ShowClass{ *this, "ShowClass", true };
     ConfigVariable<bool> ShortClassName{ *this, "ShortClassName", true };
@@ -98,6 +90,20 @@ public:
 
     ConfigVariable<float> ScaleFactor{ *this, "ScaleFactor", 1.0f, 0.1f, 10.0f };
     ConfigVariable<float> MaxCalculatedScaleFactor{ *this, "MaxCalculatedScaleFactor", 1.10f, 0.1f, 10.0f };
+};
+
+class NameplateConfigGroup : public ConfigGroup
+{
+public:
+    NameplateConfigGroup(ConfigContainer& container, std::string name)
+        : ConfigGroup(container, std::move(name))
+    {
+    }
+
+    ConfigVariable<bool> Render{ *this, "Render", true };
+    ConfigVariable<uint32_t> NameplateConfigStyle{ *this, "NameplateConfigStyle", 0 };
+
+    NameplateStyleConfigGroup& GetStyle();
 };
 
 
@@ -123,14 +129,6 @@ private:
     ConfigContainer m_container;
 
 public:
-    // Rendering toggles
-    ConfigVariable<bool> RenderForSelf{ m_container, "RenderForSelf", true };
-    ConfigVariable<bool> RenderForGroup{ m_container, "RenderForGroup", true };
-    ConfigVariable<bool> RenderForTarget{ m_container, "RenderForTarget", true };
-    ConfigVariable<bool> RenderForAllHaters{ m_container, "RenderForAllHaters", true };
-    ConfigVariable<bool> RenderForNPCs{ m_container, "RenderForNPCs", false };
-    ConfigVariable<bool> RenderForPCs{ m_container, "RenderForPCs", false };
-
     // Per-type options
     NameplateConfigGroup TargetNameplateOptions{ m_container, "TargetNameplateOptions" };
     NameplateConfigGroup SelfNameplateOptions{ m_container, "SelfNameplateOptions" };
@@ -166,12 +164,9 @@ public:
     ConfigVariable<mq::MQColor> ColorRangeLow{ m_container, "ColorRangeLow", mq::MQColor(204,51,51) };
     ConfigVariable<mq::MQColor> ColorRangeMid{ m_container, "ColorRangeMid", mq::MQColor(230,179,51) };
     ConfigVariable<mq::MQColor> ColorRangeHigh{ m_container, "ColorRangeHigh", mq::MQColor(51,230,51) };
-    ConfigVariable<mq::MQColor> CustomColor1{ m_container, "CustomColor1", mq::MQColor(255,255,255) };
-    ConfigVariable<mq::MQColor> CustomColor2{ m_container, "CustomColor2", mq::MQColor(255,255,255) };
-    ConfigVariable<mq::MQColor> CustomColor3{ m_container, "CustomColor3", mq::MQColor(255,255,255) };
-    ConfigVariable<mq::MQColor> CustomColor4{ m_container, "CustomColor4", mq::MQColor(255,255,255) };
-    ConfigVariable<mq::MQColor> CustomColor5{ m_container, "CustomColor5", mq::MQColor(255,255,255) };
-    ConfigVariable<mq::MQColor> CustomColor6{ m_container, "CustomColor6", mq::MQColor(255,255,255) };
+
+    // Styles
+    std::vector<NameplateStyleConfigGroup> NameplateStyles;
 
     // Testing
     std::vector<TestConfigGroup> TestGroups;
