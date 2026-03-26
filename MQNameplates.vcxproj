@@ -98,7 +98,7 @@
     <ClCompile Include="ConfigVariable.cpp" />
     <ClCompile Include="MaskedImage.cpp" />
     <ClCompile Include="Nameplate.cpp" />
-    <ClCompile Include="MQAnimatedNameplates.cpp" />
+    <ClCompile Include="MQNameplates.cpp" />
     <ClCompile Include="SettingsPanel.cpp" />
     <ClCompile Include="Widgets.cpp" />
   </ItemGroup>
@@ -112,7 +112,7 @@
     <ClInclude Include="Widgets.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MQAnimatedNameplates.rc" />
+    <ResourceCompile Include="MQNameplates.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

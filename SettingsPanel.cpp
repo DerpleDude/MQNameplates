@@ -398,7 +398,7 @@ void Ui::RenderSettingsPanel()
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
     ImGui::BeginChild(
-        "##AnimatedNameplatesSettings",
+        "##NameplatesSettings",
         ImVec2(std::max(ImGui::GetContentRegionAvail().x, 400.0f), std::max(ImGui::GetContentRegionAvail().y, 250.0f)),
         ImGuiChildFlags_None, ImGuiWindowFlags_None);
 

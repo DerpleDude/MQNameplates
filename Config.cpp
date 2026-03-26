@@ -25,7 +25,7 @@ void Config::SaveSettings()
 
 void Config::LoadSettings()
 {
-    m_configFile = (std::filesystem::path(mq::gPathConfig) / "MQAnimatedNameplates.yaml").string();
+    m_configFile = (std::filesystem::path(mq::gPathConfig) / "MQNameplates.yaml").string();
 
     m_container.LoadConfig(m_configFile);
 }

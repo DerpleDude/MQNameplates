@@ -1,4 +1,4 @@
-// MQAnimatedNameplates.cpp : Defines the entry point for the DLL application.
+// MQNameplates.cpp : Defines the entry point for the DLL application.
 //
 
 // PLUGIN_API is only to be used for callbacks.  All existing callbacks at this time
@@ -25,7 +25,7 @@
 #include <ranges>
 #include <unordered_map>
 
-PreSetup("MQAnimatedNameplates");
+PreSetup("MQNameplates");
 PLUGIN_VERSION(0.1);
 
 iam_context* context = nullptr;

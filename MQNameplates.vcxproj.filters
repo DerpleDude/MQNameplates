@@ -12,7 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MQAnimatedNameplates.cpp">
+    <ClCompile Include="MQNameplates.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SettingsPanel.cpp">
@@ -58,7 +58,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MQAnimatedNameplates.rc">
+    <ResourceCompile Include="MQNameplates.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
