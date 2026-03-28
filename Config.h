@@ -118,8 +118,7 @@ class NameplateConfigGroup : public ConfigGroup
 {
 public:
     NameplateConfigGroup(ConfigContainer& container, std::string name, bool defaultEnabled, DefaultConfigStyles defaultStyle)
-        : ConfigGroup(container
-        , std::move(name))
+        : ConfigGroup(container, std::move(name))
         , Render{ *this, "Render", defaultEnabled }
         , NameplateConfigStyle{ *this, "NameplateConfigStyle", static_cast<uint32_t>(defaultStyle) }
     {
