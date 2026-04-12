@@ -185,8 +185,8 @@ public:
     ConfigVariable<float> NameplateHeightScaleCoeff{ m_container, "NameplateHeightScaleCoeff", 0.3125f, 0.01f, 1.0f };
 
     // Layout / sizes
-    ConfigVariable<mq::MQColor> ColorRangeLow{ m_container, "ColorRangeLow", mq::MQColor(204,51,51) };
-    ConfigVariable<mq::MQColor> ColorRangeHigh{ m_container, "ColorRangeHigh", mq::MQColor(51,230,51) };
+    ConfigVariable<mq::MQColor> ColorRangeLow{ m_container, "ColorRangeLow", mq::MQColor(140,10,140) };
+    ConfigVariable<mq::MQColor> ColorRangeHigh{ m_container, "ColorRangeHigh", mq::MQColor(50,170,230) };
 
     // Styles
     NameplateStylesContainer NameplateStyles{ m_container, "NameplateStyles"};
