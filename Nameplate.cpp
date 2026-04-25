@@ -16,6 +16,7 @@ static MaskedImage g_maskedImage3{ "energy_filler_gold.png", "BarBorders\\round-
 
 static const ImGuiID pct_id = ImHashStr("pct_tween");
 static const ImGuiID target_scale_id = ImHashStr("target_scale_tween");
+static const ImU32 yellowBorderColor = MQColor(255, 255, 0, 255).ToImU32();
 
 ImU32 ReduceAlpha(ImU32 col, float factor)
 {
@@ -249,6 +250,7 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
         // this draws above the nameplate so we can use a seperate cursor for it since it will not change the cursor for
         // the plate.
         int iconsDrawn = 0;
+        std::string playerName{ pLocalPC->Name };
         for (int i = 0; i < buffCount; i++)
         {
             auto buff = GetCachedBuffAtSlot(m_pSpawn, i);
@@ -257,7 +259,8 @@ void Nameplate::Render(const ImVec2& center_pos, const ImVec2& frameSize, float 
             {
                 if (EQ_Spell* spell = GetSpellByID(buff->spellId))
                 {
-                    RenderSpellIcon(buffPos, spell);
+                    // color it yellow if we cast it
+                    RenderSpellIcon(buffPos, spell, playerName.compare(buff->casterName) == 0 ? yellowBorderColor : 0);
                     iconsDrawn += 1;
                     
                     if ((iconsDrawn) % buffsPerRow == 0)
@@ -453,7 +456,26 @@ void Nameplate::RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 colo
         drawList->AddRectFilled(min, max, color, rounding);
 }
 
-void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell)
+eqlib::CTextureAnimation* Nameplate::GetBGForSpell(eqlib::EQ_Spell* pSpell)
+{
+    if (!pSpell)
+        return pBuffWnd->ptaBlueIconBackground;
+
+    switch (pSpell->SpellType)
+    {
+    case SpellType_BeneficialGroupOnly:
+    case SpellType_Beneficial:
+        return pBuffWnd->ptaBlueIconBackground;
+    case SpellType_Detrimental:
+        return pSpell->BypassRegenCheck ? pBuffWnd->ptaYellowIconBackground : pBuffWnd->ptaRedIconBackground;
+    default:
+        break;
+    }
+
+    return pBuffWnd->ptaBlueIconBackground;
+}
+
+void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell, ImU32 borderCol)
 {
     ImVec2 size(m_pConfigGroup->GetStyle().IconSize, m_pConfigGroup->GetStyle().IconSize);
     ImVec2 max(pos + size);
@@ -462,11 +484,16 @@ void Nameplate::RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell)
 
     if (pSidlMgr)
     {
-        if (CTextureAnimation* anim = pSidlMgr->FindAnimation("A_SpellGems"))
+        if (CTextureAnimation* anim = pSidlMgr->FindAnimation("A_SpellIcons"))
         {
+            mq::imgui::DrawTextureAnimation(drawList, GetBGForSpell(pSpell), pos, size);
             int iconID = pSpell->SpellIcon;
             anim->SetCurCell(iconID);
-            mq::imgui::DrawTextureAnimation(drawList, anim, pos, size);
+            mq::imgui::DrawTextureAnimation(drawList, anim, pos + ImVec2(2,2), size - ImVec2(4,4));
+            if (borderCol != 0)
+            {
+                drawList->AddRect(pos, max, borderCol, 0, 0, 0.5f);
+            }
         }
     }
 }

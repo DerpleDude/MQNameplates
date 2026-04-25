@@ -12,6 +12,7 @@ namespace eqlib
 {
     class EQ_Spell;
     class PlayerClient;
+    class CTextureAnimation;
 } // namespace eqlib
 
 namespace Ui {
@@ -41,7 +42,8 @@ public:
     void AddRectFilledMultiColorRounded(const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left,
         ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left, float rounding, ImDrawFlags flags);
 
-    void RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell);
+    eqlib::CTextureAnimation* GetBGForSpell(eqlib::EQ_Spell* pSpell);
+    void RenderSpellIcon(const ImVec2& pos, eqlib::EQ_Spell* pSpell, ImU32 borderCol = 0);
     
     void RenderDebugInfo(const ImVec2& min, const ImVec2& max, ImU32 color, float rounding, float scale, float finalScale);
 
