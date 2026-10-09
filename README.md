@@ -1,42 +1,36 @@
-# MQNameplates
+## MQNameplates
 
-One Paragraph project description goes here
+MQNameplates replaces the stock EverQuest name sprites with animated, ImGui-drawn nameplates. Each nameplate is anchored to the spawn's head bone and shows the name, level, class, an animated HP bar, an optional guild or purpose line, and (for your target) the spawn's buff icons with a yellow indicator on buffs you cast. Nameplates are drawn for six spawn categories (Self, Target, Group, Auto Haters / XTargets, PCs, NPCs), each of which can be toggled independently and assigned its own visual style. Line-of-sight and distance culling, distance scaling, and a smooth HP interpolation keep the overlay readable without cluttering the screen. All settings are editable live from the MacroQuest settings window and persist to a YAML file.
 
-## Getting Started
+### Known Bugs
 
-Quick start instructions to get users up and going
+EQ Nameplates are not correctly disabled.
 
-```txt
-/plugin Nameplates
-```
+### Getting Started
+
+Load the plugin from the MacroQuest chat window, then open the settings panel under Settings > Plugins > Nameplates to turn categories on and off and tweak styles. By default Self, Target and Auto Hater nameplates are enabled; Group, PC and NPC nameplates are off.
+
+[CODE=txt]/plugin Nameplates
+[/CODE]
 
 ### Commands
 
-Describe the commands available and how to use them.
+Almost everything is driven from the settings panel, which has four tabs: Look and Feel, Style Editor, Rendering Options, and Dev and Debug.
 
-```txt
-Give examples
-```
+[CODE=txt]/nameplates reload - Re-read MQNameplates.yaml from disk and apply it (useful after hand-editing the file)
+[/CODE]
 
-### Configuration File
+### Other Notes
 
-Describe the configuration file and what the settings do
+- Nameplates for spawns that haven't been drawn in 30 seconds are discarded; Target, Group and Auto Hater nameplates are also dropped as soon as the spawn leaves that role. Toggling a category off is instant.
+- Line-of-sight is tested from the camera first, then from your character's head, so a mob behind a pillar relative to the camera can still show if you can see it.
+- Nameplates are sorted so the furthest draw first and your current target always draws on top.
+- Invisible and dynamic-object spawns are supported.
+- HP bars animate smoothly toward the real value rather than snapping. The Color Range style blends through an automatically computed mid color to avoid the flicker you get when lerping between very different hues.
+- The Dev and Debug tab includes a test bar, fake HP percentages, and a bounding box overlay for tuning positioning without needing a live target.
+- Blinking buff icons are on the TODO list.
 
-```yaml
-- Example goes here
-```
+### Authors
 
-## Other Notes
-
-Add additional notes
-
-## Authors
-
-* **Your name** - *Initial work*
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## Acknowledgments
-
-* Inspiration from...
-* I'd like to thank the Thieves' Guild for helping me with all the code I stole...
+Derple - Initial work
+brainiac - Nameplate positioning, LOS, and config variable system
