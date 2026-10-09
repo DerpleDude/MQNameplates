@@ -31,6 +31,7 @@ Almost everything is driven from the settings panel, which has four tabs: Look a
 - Blinking buff icons are on the TODO list.
 
 ### Screenshots
+<img width="471" height="431" alt="image" src="https://github.com/user-attachments/assets/7eb5d9b8-3c3c-4498-bf66-9229d1768d32" />
 <img width="2868" height="1085" alt="image" src="https://github.com/user-attachments/assets/4c2c8008-682a-487c-aedc-8a7b0a1462e5" />
 <img width="988" height="1068" alt="image" src="https://github.com/user-attachments/assets/f54e78b0-f539-46a3-b0a0-e280ef838bed" />
 <img width="989" height="1240" alt="image" src="https://github.com/user-attachments/assets/e59a36c1-20e7-49e0-b0d6-d9cf4999a258" />
