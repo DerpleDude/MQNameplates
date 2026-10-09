@@ -30,6 +30,13 @@ Almost everything is driven from the settings panel, which has four tabs: Look a
 - The Dev and Debug tab includes a test bar, fake HP percentages, and a bounding box overlay for tuning positioning without needing a live target.
 - Blinking buff icons are on the TODO list.
 
+### Screenshots
+<img width="2868" height="1085" alt="image" src="https://github.com/user-attachments/assets/4c2c8008-682a-487c-aedc-8a7b0a1462e5" />
+<img width="988" height="1068" alt="image" src="https://github.com/user-attachments/assets/f54e78b0-f539-46a3-b0a0-e280ef838bed" />
+<img width="989" height="1240" alt="image" src="https://github.com/user-attachments/assets/e59a36c1-20e7-49e0-b0d6-d9cf4999a258" />
+<img width="985" height="583" alt="image" src="https://github.com/user-attachments/assets/68191ad2-63fd-4e94-814a-057170c0fe8e" />
+<img width="994" height="662" alt="image" src="https://github.com/user-attachments/assets/68c1864c-0e23-4451-9c25-aad72c62bd59" />
+
 ### Authors
 
 Derple - Initial work
