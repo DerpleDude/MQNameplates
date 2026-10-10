@@ -124,7 +124,7 @@ static bool ShouldRenderNameplate(Ui::Nameplate* pNameplate)
     switch (pNameplate->GetNameplateType())
     {
     case Ui::NameplateType_Self:
-        return config.SelfNameplateOptions.Render;
+        return config.SelfNameplateOptions.Render && *CDisplay::cameraType != EQ_FIRST_PERSON_CAM; // don't render self nameplate in first person view
     case Ui::NameplateType_Group:
         return config.GroupNameplateOptions.Render;
     case Ui::NameplateType_Target:
@@ -268,7 +268,7 @@ void NameplateCommandHandler(PlayerClient*, const char* szLine) {
 
 PLUGIN_API void InitializePlugin()
 {
-    WriteChatf("\agNameplates\aw by \a-t***\ay Derple, brainiac \a-t*** \agLoaded! ");
+    WriteChatf("\agNameplates\aw by \a-t***\ay Derple, brainiac \a-t*** \agLoaded!");
 
     context = iam_context_create();
     AddSettingsPanel("plugins/Nameplates", Ui::RenderSettingsPanel);
