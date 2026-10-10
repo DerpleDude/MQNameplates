@@ -40,5 +40,5 @@ Almost everything is driven from the settings panel, which has four tabs: Look a
 
 ### Authors
 
-Derple - Initial work
-brainiac - Nameplate positioning, LOS, and config variable system
+- Derple - Initial work
+- brainiac - Nameplate positioning, LOS, and config variable system
